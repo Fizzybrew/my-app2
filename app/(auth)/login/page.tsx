@@ -7,7 +7,7 @@ import { useActionState, useEffect, useState } from "react";
 
 import { AuthForm } from "@/components/chat/auth-form";
 import { SubmitButton } from "@/components/chat/submit-button";
-import { toast } from "@/components/chat/toast";
+import { toast } from "sonner";
 import { type LoginActionState, login } from "../actions";
 
 export default function Page() {
@@ -17,7 +17,7 @@ export default function Page() {
 
   const [state, formAction] = useActionState<LoginActionState, FormData>(
     login,
-    { status: "idle" }
+    { status: "idle" },
   );
 
   const { update: updateSession } = useSession();
@@ -25,12 +25,9 @@ export default function Page() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: router and updateSession are stable refs
   useEffect(() => {
     if (state.status === "failed") {
-      toast({ description: "Invalid credentials!", type: "error" });
+      toast.error("Invalid credentials!");
     } else if (state.status === "invalid_data") {
-      toast({
-        description: "Failed validating your submission!",
-        type: "error",
-      });
+      toast.error("Failed validating your submission!");
     } else if (state.status === "success") {
       setIsSuccessful(true);
       updateSession();
@@ -45,13 +42,12 @@ export default function Page() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
-      <p className="text-sm text-muted-foreground">
-        Sign in to your account to continue
-      </p>
+      <h1 className="text-3xl font-semibold tracking-tight mb-4 text-center">
+        Sign In
+      </h1>
       <AuthForm action={handleSubmit} defaultEmail={email}>
         <SubmitButton isSuccessful={isSuccessful}>Sign in</SubmitButton>
-        <p className="text-center text-[13px] text-muted-foreground">
+        <p className="text-center text-sm text-muted-foreground">
           {"No account? "}
           <Link
             className="text-foreground underline-offset-4 hover:underline"

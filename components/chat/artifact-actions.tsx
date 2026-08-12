@@ -1,9 +1,9 @@
 import { memo, type ReactNode, useCallback, useState } from "react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { artifactDefinitions, type UIArtifact } from "./artifact";
 import type { ArtifactActionContext } from "./create-artifact";
+import { Button } from "../ui/button";
 
 type ArtifactActionsProps = {
   artifact: UIArtifact;
@@ -46,29 +46,24 @@ function ArtifactActionButton({
     }
   }, [action, actionContext, setIsLoading]);
 
-  return (
+  const button = (
+    <Button
+      disabled={disabled}
+      onClick={handleClick}
+      size="icon"
+      variant="ghost"
+      aria-label={action.description}
+    >
+      {action.icon}
+    </Button>
+  );
+
+  return disabled ? (
+    button
+  ) : (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          className={cn(
-            "flex items-center justify-center rounded-full p-3 text-muted-foreground transition-all duration-150",
-            "hover:text-foreground",
-            "active:scale-95",
-            "disabled:pointer-events-none disabled:opacity-30",
-            {
-              "text-foreground": isActive,
-            }
-          )}
-          disabled={disabled}
-          onClick={handleClick}
-          type="button"
-        >
-          {action.icon}
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="left" sideOffset={8}>
-        {action.description}
-      </TooltipContent>
+      <TooltipTrigger asChild>{button}</TooltipTrigger>
+      <TooltipContent side="left">{action.description}</TooltipContent>
     </Tooltip>
   );
 }
@@ -85,7 +80,7 @@ function PureArtifactActions({
   const [isLoading, setIsLoading] = useState(false);
 
   const artifactDefinition = artifactDefinitions.find(
-    (definition) => definition.kind === artifact.kind
+    (definition) => definition.kind === artifact.kind,
   );
 
   if (!artifactDefinition) {
@@ -130,22 +125,13 @@ function PureArtifactActions({
 export const ArtifactActions = memo(
   PureArtifactActions,
   (prevProps, nextProps) => {
-    if (prevProps.artifact.status !== nextProps.artifact.status) {
+    if (prevProps.artifact.status !== nextProps.artifact.status) return false;
+    if (prevProps.currentVersionIndex !== nextProps.currentVersionIndex)
       return false;
-    }
-    if (prevProps.currentVersionIndex !== nextProps.currentVersionIndex) {
-      return false;
-    }
-    if (prevProps.isCurrentVersion !== nextProps.isCurrentVersion) {
-      return false;
-    }
-    if (prevProps.artifact.content !== nextProps.artifact.content) {
-      return false;
-    }
-    if (prevProps.mode !== nextProps.mode) {
-      return false;
-    }
+    if (prevProps.isCurrentVersion !== nextProps.isCurrentVersion) return false;
+    if (prevProps.artifact.content !== nextProps.artifact.content) return false;
+    if (prevProps.mode !== nextProps.mode) return false;
 
     return true;
-  }
+  },
 );

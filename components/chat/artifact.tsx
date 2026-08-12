@@ -1,7 +1,7 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { formatDistance } from "date-fns";
 import equal from "fast-deep-equal";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import {
   type Dispatch,
   memo,
@@ -21,13 +21,11 @@ import { useArtifact } from "@/hooks/use-artifact";
 import type { Document, Vote } from "@/lib/db/schema";
 import type { Attachment, ChatMessage } from "@/lib/types";
 import { fetcher } from "@/lib/utils";
-import { useSidebar } from "../ui/sidebar";
 import { ArtifactActions } from "./artifact-actions";
 import { ArtifactCloseButton } from "./artifact-close-button";
-import { LoaderIcon } from "./icons";
 import { Toolbar } from "./toolbar";
 import { VersionFooter } from "./version-footer";
-import type { VisibilityType } from "./visibility-selector";
+import { Loader } from "lucide-react";
 
 export const artifactDefinitions = [
   textArtifact,
@@ -66,8 +64,7 @@ function PureArtifact({
   setMessages,
   regenerate: _regenerate,
   votes: _votes,
-  isReadonly: _isReadonly,
-  selectedVisibilityType: _selectedVisibilityType,
+  isReadonly: isReadonly,
   selectedModelId: _selectedModelId,
 }: {
   addToolApprovalResponse: UseChatHelpers<ChatMessage>["addToolApprovalResponse"];
@@ -84,7 +81,6 @@ function PureArtifact({
   sendMessage: UseChatHelpers<ChatMessage>["sendMessage"];
   regenerate: UseChatHelpers<ChatMessage>["regenerate"];
   isReadonly: boolean;
-  selectedVisibilityType: VisibilityType;
   selectedModelId: string;
 }) {
   const { artifact, setArtifact, metadata, setMetadata } = useArtifact();
@@ -97,14 +93,13 @@ function PureArtifact({
     artifact.documentId !== "init" && artifact.status !== "streaming"
       ? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/document?id=${artifact.documentId}`
       : null,
-    fetcher
+    fetcher,
   );
 
   const [mode, setMode] = useState<"edit" | "diff">("edit");
   const [document, setDocument] = useState<Document | null>(null);
   const [currentVersionIndex, setCurrentVersionIndex] = useState(-1);
 
-  const { state: sidebarState } = useSidebar();
   const artifactContentRef = useRef<HTMLDivElement>(null);
   const userScrolledArtifact = useRef(false);
   const [isContentDirty, setIsContentDirty] = useState(false);
@@ -114,13 +109,9 @@ function PureArtifact({
       userScrolledArtifact.current = false;
       return;
     }
-    if (userScrolledArtifact.current) {
-      return;
-    }
+    if (userScrolledArtifact.current) return;
     const el = artifactContentRef.current;
-    if (!el) {
-      return;
-    }
+    if (!el) return;
     el.scrollTo({ top: el.scrollHeight });
   }, [artifact.status]);
 
@@ -149,16 +140,12 @@ function PureArtifact({
 
   const handleContentChange = useCallback(
     (updatedContent: string) => {
-      if (!artifact) {
-        return;
-      }
+      if (!artifact) return;
 
       mutate<Document[]>(
         `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/document?id=${artifact.documentId}`,
         async (currentDocuments) => {
-          if (!currentDocuments) {
-            return [];
-          }
+          if (!currentDocuments) return [];
 
           const currentDocument = currentDocuments.at(-1);
 
@@ -182,7 +169,7 @@ function PureArtifact({
                 title: artifact.title,
               }),
               method: "POST",
-            }
+            },
           );
 
           setIsContentDirty(false);
@@ -190,13 +177,13 @@ function PureArtifact({
           return currentDocuments.map((doc, i) =>
             i === currentDocuments.length - 1
               ? { ...doc, content: updatedContent }
-              : doc
+              : doc,
           );
         },
-        { revalidate: false }
+        { revalidate: false },
       );
     },
-    [artifact, mutate]
+    [artifact, mutate],
   );
 
   const latestContentRef = useRef<string>("");
@@ -221,41 +208,33 @@ function PureArtifact({
         handleContentChange(updatedContent);
       }
     },
-    [handleContentChange]
+    [handleContentChange],
   );
 
   const getDocumentContentById = useCallback(
     (index: number) => {
-      if (!documents) {
-        return "";
-      }
-      if (!documents[index]) {
-        return "";
-      }
+      if (!documents) return "";
+      if (!documents[index]) return "";
       return documents[index].content ?? "";
     },
-    [documents]
+    [documents],
   );
 
   const handleVersionChange = useCallback(
     (type: "next" | "prev" | "toggle" | "latest") => {
-      if (!documents) {
-        return;
-      }
+      if (!documents) return;
 
       if (type === "latest") {
         setCurrentVersionIndex(documents.length - 1);
         setMode("edit");
       }
 
-      if (type === "toggle") {
+      if (type === "toggle")
         setMode((currentMode) => (currentMode === "edit" ? "diff" : "edit"));
-      }
 
       if (type === "prev") {
-        if (currentVersionIndex > 0) {
+        if (currentVersionIndex > 0)
           setCurrentVersionIndex((index) => index - 1);
-        }
       } else if (
         type === "next" &&
         currentVersionIndex < documents.length - 1
@@ -263,21 +242,15 @@ function PureArtifact({
         setCurrentVersionIndex((index) => index + 1);
       }
     },
-    [currentVersionIndex, documents]
+    [currentVersionIndex, documents],
   );
 
   const handleArtifactScroll = useCallback(() => {
     const el = artifactContentRef.current;
-    if (!el) {
-      return;
-    }
+    if (!el) return;
     const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
     userScrolledArtifact.current = !atBottom;
   }, []);
-
-  const handleClose = useCallback(() => {
-    setArtifact((prev) => ({ ...prev, isVisible: false }));
-  }, [setArtifact]);
 
   const [isToolbarVisible, setIsToolbarVisible] = useState(true);
 
@@ -290,12 +263,10 @@ function PureArtifact({
   const isMobile = windowWidth ? windowWidth < 768 : false;
 
   const artifactDefinition = artifactDefinitions.find(
-    (definition) => definition.kind === artifact.kind
+    (definition) => definition.kind === artifact.kind,
   );
 
-  if (!artifactDefinition) {
-    throw new Error("Artifact definition not found!");
-  }
+  if (!artifactDefinition) throw new Error("Artifact definition not found!");
 
   useEffect(() => {
     if (artifact.documentId !== "init" && artifactDefinition.initialize) {
@@ -306,69 +277,64 @@ function PureArtifact({
     }
   }, [artifact.documentId, artifactDefinition, setMetadata]);
 
-  if (!artifact.isVisible && !isMobile) {
+  if (!artifact.isVisible) {
     return (
       <div
         className="h-dvh w-0 shrink-0 overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
         data-testid="artifact"
+        suppressHydrationWarning
       />
     );
-  }
-
-  if (!artifact.isVisible) {
-    return null;
   }
 
   const consoleError =
     metadata?.outputs
       ?.filter((o: { status: string }) => o.status === "failed")
       .flatMap((o: { contents: { type: string; value: string }[] }) =>
-        o.contents.filter((c) => c.type === "text").map((c) => c.value)
+        o.contents.filter((c) => c.type === "text").map((c) => c.value),
       )
       .join("\n") || undefined;
 
   const artifactPanel = (
     <>
-      {sidebarState !== "collapsed" && (
-        <div className="flex h-[calc(3.5rem+1px)] shrink-0 items-center justify-between border-b border-border/50 px-4">
-          <div className="flex items-center gap-3">
-            <ArtifactCloseButton />
-            <div className="flex flex-col gap-0.5">
-              <div className="text-sm font-semibold leading-tight tracking-tight">
-                {artifact.title}
-              </div>
-              <div className="flex items-center gap-2">
-                {isContentDirty ? (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <div className="size-1.5 animate-pulse rounded-full bg-amber-500" />
-                    Saving...
+      <div className="flex h-14 shrink-0 items-center justify-between px-4">
+        <div className="flex items-center gap-2">
+          <ArtifactCloseButton />
+          <div className="flex flex-col gap-0.5">
+            <div className="text-sm font-semibold leading-tight tracking-tight">
+              {artifact.title}
+            </div>
+            <div className="flex items-center gap-2">
+              {isContentDirty ? (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <div className="size-1.5 animate-pulse rounded-full bg-amber-500" />
+                  Saving...
+                </div>
+              ) : document ? (
+                <div className="text-xs text-muted-foreground">
+                  {`Updated ${formatDistance(new Date(document.createdAt), new Date(), { addSuffix: true })}`}
+                </div>
+              ) : artifact.status === "streaming" ? (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <div className="animate-spin">
+                    <Loader size={12} />
                   </div>
-                ) : document ? (
-                  <div className="text-xs text-muted-foreground">
-                    {`Updated ${formatDistance(new Date(document.createdAt), new Date(), { addSuffix: true })}`}
-                  </div>
-                ) : artifact.status === "streaming" ? (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <div className="animate-spin">
-                      <LoaderIcon size={12} />
-                    </div>
-                    Generating...
-                  </div>
-                ) : (
-                  <div className="h-3 w-24 animate-pulse rounded bg-muted-foreground/10" />
-                )}
-                {documents && documents.length > 1 && (
-                  <div className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground">
-                    v{currentVersionIndex + 1}/{documents.length}
-                  </div>
-                )}
-              </div>
+                  Generating...
+                </div>
+              ) : (
+                <div className="h-3 w-24 animate-pulse rounded bg-muted-foreground/10" />
+              )}
+              {documents && documents.length > 1 && (
+                <div className="rounded-md bg-muted px-1.5 py-0.5 text-[13px] font-medium tabular-nums text-muted-foreground">
+                  v{currentVersionIndex + 1}/{documents.length}
+                </div>
+              )}
             </div>
           </div>
         </div>
-      )}
+      </div>
       <div
-        className="relative flex-1 overflow-y-auto bg-background"
+        className="relative flex-1 overflow-auto bg-background"
         data-slot="artifact-content"
         onScroll={handleArtifactScroll}
         ref={artifactContentRef}
@@ -393,7 +359,7 @@ function PureArtifact({
           title={artifact.title}
         />
         <AnimatePresence>
-          {isCurrentVersion ? (
+          {isCurrentVersion && !isReadonly ? (
             <Toolbar
               artifactActions={
                 <ArtifactActions
@@ -410,7 +376,6 @@ function PureArtifact({
               consoleError={consoleError}
               documentId={artifact.documentId}
               isToolbarVisible={isToolbarVisible}
-              onClose={handleClose}
               sendMessage={sendMessage}
               setIsToolbarVisible={setIsToolbarVisible}
               setMessages={setMessages}
@@ -465,7 +430,7 @@ function PureArtifact({
 
   return (
     <div
-      className="flex h-dvh w-[60%] shrink-0 flex-col overflow-hidden border-l border-border/50 bg-sidebar transition-[width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
+      className="flex h-dvh w-[60%] shrink-0 flex-col overflow-hidden md:border-l md:border-border/50 bg-sidebar transition-[width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
       data-testid="artifact"
     >
       {artifactPanel}
@@ -474,21 +439,10 @@ function PureArtifact({
 }
 
 export const Artifact = memo(PureArtifact, (prevProps, nextProps) => {
-  if (prevProps.status !== nextProps.status) {
-    return false;
-  }
-  if (!equal(prevProps.votes, nextProps.votes)) {
-    return false;
-  }
-  if (prevProps.input !== nextProps.input) {
-    return false;
-  }
-  if (prevProps.messages.length !== nextProps.messages.length) {
-    return false;
-  }
-  if (prevProps.selectedVisibilityType !== nextProps.selectedVisibilityType) {
-    return false;
-  }
+  if (prevProps.status !== nextProps.status) return false;
+  if (!equal(prevProps.votes, nextProps.votes)) return false;
+  if (prevProps.input !== nextProps.input) return false;
+  if (prevProps.messages.length !== nextProps.messages.length) return false;
 
   return true;
 });

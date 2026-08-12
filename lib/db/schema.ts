@@ -32,9 +32,7 @@ export const chat = pgTable("Chat", {
   userId: uuid("userId")
     .notNull()
     .references(() => user.id),
-  visibility: varchar("visibility", { enum: ["public", "private"] })
-    .notNull()
-    .default("private"),
+  pinned: boolean("pinned").notNull().default(false),
 });
 
 export type Chat = InferSelectModel<typeof chat>;
@@ -65,7 +63,7 @@ export const vote = pgTable(
   },
   (table) => ({
     pk: primaryKey({ columns: [table.chatId, table.messageId] }),
-  })
+  }),
 );
 
 export type Vote = InferSelectModel<typeof vote>;
@@ -86,7 +84,7 @@ export const document = pgTable(
   },
   (table) => ({
     pk: primaryKey({ columns: [table.id, table.createdAt] }),
-  })
+  }),
 );
 
 export type Document = InferSelectModel<typeof document>;
@@ -112,7 +110,7 @@ export const suggestion = pgTable(
       foreignColumns: [document.id, document.createdAt],
     }),
     pk: primaryKey({ columns: [table.id] }),
-  })
+  }),
 );
 
 export type Suggestion = InferSelectModel<typeof suggestion>;
@@ -130,7 +128,7 @@ export const stream = pgTable(
       foreignColumns: [chat.id],
     }),
     pk: primaryKey({ columns: [table.id] }),
-  })
+  }),
 );
 
 export type Stream = InferSelectModel<typeof stream>;

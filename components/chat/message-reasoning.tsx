@@ -19,9 +19,7 @@ export function MessageReasoning({
   const [hasBeenStreaming, setHasBeenStreaming] = useState(isLoading);
 
   useEffect(() => {
-    if (isLoading) {
-      setHasBeenStreaming(true);
-    }
+    if (isLoading) setHasBeenStreaming(true);
   }, [isLoading]);
 
   return (

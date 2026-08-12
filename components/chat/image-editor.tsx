@@ -1,5 +1,5 @@
 import cn from "classnames";
-import { LoaderIcon } from "./icons";
+import { Loader } from "lucide-react";
 
 type ImageEditorProps = {
   title: string;
@@ -19,7 +19,7 @@ export function ImageEditor({
   return (
     <div
       className={cn("flex w-full flex-row items-center justify-center", {
-        "h-[200px]": isInline,
+        "h-50": isInline,
         "h-[calc(100dvh-60px)]": !isInline,
       })}
     >
@@ -27,7 +27,7 @@ export function ImageEditor({
         <div className="flex flex-row items-center gap-4">
           {!isInline && (
             <div className="animate-spin">
-              <LoaderIcon />
+              <Loader />
             </div>
           )}
           <div>Generating Image...</div>
@@ -36,7 +36,7 @@ export function ImageEditor({
         <picture>
           <img
             alt={title}
-            className={cn("h-fit w-full max-w-[800px]", {
+            className={cn("h-fit w-full max-w-200", {
               "p-0 md:p-20": !isInline,
             })}
             src={`data:image/png;base64,${content}`}

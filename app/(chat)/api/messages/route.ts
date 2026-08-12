@@ -10,34 +10,27 @@ export async function GET(request: Request) {
     return Response.json({ error: "chatId required" }, { status: 400 });
   }
 
-  const [session, chat, messages] = await Promise.all([
-    auth(),
-    getChatById({ id: chatId }),
-    getMessagesByChatId({ id: chatId }),
-  ]);
+  const session = await auth();
+
+  if (!session?.user) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  const chat = await getChatById({ id: chatId });
 
   if (!chat) {
     return Response.json({
       isReadonly: false,
       messages: [],
-      userId: null,
-      visibility: "private",
+      userId: session.user.id,
     });
   }
 
-  if (
-    chat.visibility === "private" &&
-    (!session?.user || session.user.id !== chat.userId)
-  ) {
-    return Response.json({ error: "forbidden" }, { status: 403 });
-  }
-
-  const isReadonly = !session?.user || session.user.id !== chat.userId;
+  const messages = await getMessagesByChatId({ id: chatId });
 
   return Response.json({
-    isReadonly,
+    isReadonly: session.user.id !== chat.userId,
     messages: convertToUIMessages(messages),
     userId: chat.userId,
-    visibility: chat.visibility,
   });
 }

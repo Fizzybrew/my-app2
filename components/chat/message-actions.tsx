@@ -9,7 +9,7 @@ import {
   MessageAction as Action,
   MessageActions as Actions,
 } from "../ai-elements/message";
-import { CopyIcon, PencilEditIcon, ThumbDownIcon, ThumbUpIcon } from "./icons";
+import { Copy, Pencil, RefreshCw, ThumbsDown, ThumbsUp } from "lucide-react";
 
 export function PureMessageActions({
   chatId,
@@ -17,12 +17,14 @@ export function PureMessageActions({
   vote,
   isLoading,
   onEdit,
+  onRegenerate,
 }: {
   chatId: string;
   message: ChatMessage;
   vote: Vote | undefined;
   isLoading: boolean;
   onEdit?: () => void;
+  onRegenerate?: () => void;
 }) {
   const { mutate } = useSWRConfig();
   const [_, copyToClipboard] = useCopyToClipboard();
@@ -53,7 +55,7 @@ export function PureMessageActions({
           type: "up",
         }),
         method: "PATCH",
-      }
+      },
     );
 
     toast.promise(upvote, {
@@ -68,7 +70,7 @@ export function PureMessageActions({
             }
 
             const votesWithoutCurrent = currentVotes.filter(
-              (currentVote) => currentVote.messageId !== message.id
+              (currentVote) => currentVote.messageId !== message.id,
             );
 
             return [
@@ -80,7 +82,7 @@ export function PureMessageActions({
               },
             ];
           },
-          { revalidate: false }
+          { revalidate: false },
         );
 
         return "Upvoted Response!";
@@ -98,7 +100,7 @@ export function PureMessageActions({
           type: "down",
         }),
         method: "PATCH",
-      }
+      },
     );
 
     toast.promise(downvote, {
@@ -108,12 +110,10 @@ export function PureMessageActions({
         mutate<Vote[]>(
           `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/vote?chatId=${chatId}`,
           (currentVotes) => {
-            if (!currentVotes) {
-              return [];
-            }
+            if (!currentVotes) return [];
 
             const votesWithoutCurrent = currentVotes.filter(
-              (currentVote) => currentVote.messageId !== message.id
+              (currentVote) => currentVote.messageId !== message.id,
             );
 
             return [
@@ -125,7 +125,7 @@ export function PureMessageActions({
               },
             ];
           },
-          { revalidate: false }
+          { revalidate: false },
         );
 
         return "Downvoted Response!";
@@ -133,65 +133,76 @@ export function PureMessageActions({
     });
   }, [chatId, message.id, mutate]);
 
-  if (isLoading) {
-    return null;
-  }
+  if (isLoading) return null;
 
   if (message.role === "user") {
     return (
-      <Actions className="-mr-0.5 justify-end opacity-0 transition-opacity duration-150 group-hover/message:opacity-100">
+      <Actions className="justify-end opacity-0 transition-opacity duration-150 pointer-coarse:opacity-100 [@media(hover:hover)]:group-hover/message:opacity-100">
         <div className="flex items-center gap-0.5">
           {onEdit ? (
             <Action
-              className="size-7 text-muted-foreground/50 hover:text-foreground"
+              variant="ghost"
               data-testid="message-edit-button"
               onClick={onEdit}
               tooltip="Edit"
+              aria-label="Edit message"
             >
-              <PencilEditIcon />
+              <Pencil />
             </Action>
           ) : null}
-          <Action
-            className="size-7 text-muted-foreground/50 hover:text-foreground"
-            onClick={handleCopy}
-            tooltip="Copy"
-          >
-            <CopyIcon />
+          <Action variant="ghost" onClick={handleCopy} tooltip="Copy">
+            <Copy />
           </Action>
         </div>
       </Actions>
     );
   }
 
+  const isUpvoteDisabled = vote?.isUpvoted;
+  const isDownvoteDisabled = vote && !vote.isUpvoted;
+
   return (
-    <Actions className="-ml-0.5 opacity-0 transition-opacity duration-150 group-hover/message:opacity-100">
+    <Actions className="opacity-0 transition-opacity duration-150 pointer-coarse:opacity-100 [@media(hover:hover)]:group-hover/message:opacity-100">
       <Action
-        className="text-muted-foreground/50 hover:text-foreground"
+        variant="ghost"
         onClick={handleCopy}
         tooltip="Copy"
+        aria-label="Copy message"
       >
-        <CopyIcon />
+        <Copy />
       </Action>
 
       <Action
-        className="text-muted-foreground/50 hover:text-foreground"
+        variant="ghost"
         data-testid="message-upvote"
-        disabled={vote?.isUpvoted}
+        disabled={isUpvoteDisabled}
         onClick={handleUpvote}
-        tooltip="Upvote Response"
+        tooltip={isUpvoteDisabled ? undefined : "Upvote Response"}
+        aria-label="Upvote response"
       >
-        <ThumbUpIcon />
+        <ThumbsUp />
       </Action>
-
       <Action
-        className="text-muted-foreground/50 hover:text-foreground"
+        variant="ghost"
         data-testid="message-downvote"
-        disabled={vote && !vote.isUpvoted}
+        disabled={isDownvoteDisabled}
         onClick={handleDownvote}
-        tooltip="Downvote Response"
+        tooltip={isDownvoteDisabled ? undefined : "Downvote Response"}
+        aria-label="Downvote response"
       >
-        <ThumbDownIcon />
+        <ThumbsDown />
       </Action>
+      {onRegenerate && (
+        <Action
+          variant="ghost"
+          data-testid="message-regenerate"
+          onClick={onRegenerate}
+          tooltip="Regenerate Response"
+          aria-label="Regenerate response"
+        >
+          <RefreshCw />
+        </Action>
+      )}
     </Actions>
   );
 }
@@ -199,13 +210,9 @@ export function PureMessageActions({
 export const MessageActions = memo(
   PureMessageActions,
   (prevProps, nextProps) => {
-    if (!equal(prevProps.vote, nextProps.vote)) {
-      return false;
-    }
-    if (prevProps.isLoading !== nextProps.isLoading) {
-      return false;
-    }
-
+    if (!equal(prevProps.vote, nextProps.vote)) return false;
+    if (prevProps.isLoading !== nextProps.isLoading) return false;
+    if (prevProps.onRegenerate !== nextProps.onRegenerate) return false;
     return true;
-  }
+  },
 );

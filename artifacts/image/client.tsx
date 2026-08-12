@@ -1,13 +1,13 @@
 import { toast } from "sonner";
 import { Artifact } from "@/components/chat/create-artifact";
-import { CopyIcon, RedoIcon, UndoIcon } from "@/components/chat/icons";
 import { ImageEditor } from "@/components/chat/image-editor";
+import { Copy, RotateCcw, RotateCw } from "lucide-react";
 
 export const imageArtifact = new Artifact({
   actions: [
     {
       description: "View Previous version",
-      icon: <UndoIcon size={18} />,
+      icon: <RotateCcw />,
       isDisabled: ({ currentVersionIndex }) => {
         if (currentVersionIndex === 0) {
           return true;
@@ -21,7 +21,7 @@ export const imageArtifact = new Artifact({
     },
     {
       description: "View Next version",
-      icon: <RedoIcon size={18} />,
+      icon: <RotateCw />,
       isDisabled: ({ isCurrentVersion }) => {
         if (isCurrentVersion) {
           return true;
@@ -35,7 +35,7 @@ export const imageArtifact = new Artifact({
     },
     {
       description: "Copy image to clipboard",
-      icon: <CopyIcon size={18} />,
+      icon: <Copy />,
       onClick: ({ content }) => {
         const img = new Image();
         img.src = `data:image/png;base64,${content}`;

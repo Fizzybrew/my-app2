@@ -2,11 +2,11 @@ import { memo, useCallback } from "react";
 import { toast } from "sonner";
 import { useArtifact } from "@/hooks/use-artifact";
 import type { ArtifactKind } from "./artifact";
-import { FileIcon, LoaderIcon, MessageIcon, PencilEditIcon } from "./icons";
+import { MessageCircle, Pencil, File, Loader } from "lucide-react";
 
 const getActionText = (
   type: "create" | "update" | "request-suggestions",
-  tense: "present" | "past"
+  tense: "present" | "past",
 ) => {
   switch (type) {
     case "create":
@@ -36,13 +36,6 @@ function PureDocumentToolResult({
   const { setArtifact } = useArtifact();
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
-      if (isReadonly) {
-        toast.error(
-          "Viewing files in shared chats is currently not supported."
-        );
-        return;
-      }
-
       const rect = event.currentTarget.getBoundingClientRect();
 
       const boundingBox = {
@@ -62,22 +55,21 @@ function PureDocumentToolResult({
         title: result.title,
       }));
     },
-    [isReadonly, result, setArtifact]
+    [isReadonly, result, setArtifact],
   );
 
   return (
     <button
       className="flex w-fit cursor-pointer flex-row items-center gap-2 rounded-xl border bg-background px-3 py-2"
       onClick={handleClick}
-      type="button"
     >
       <div className="text-muted-foreground">
         {type === "create" ? (
-          <FileIcon />
+          <File />
         ) : type === "update" ? (
-          <PencilEditIcon />
+          <Pencil />
         ) : type === "request-suggestions" ? (
-          <MessageIcon />
+          <MessageCircle />
         ) : null}
       </div>
       <div className="text-left">
@@ -108,7 +100,7 @@ function PureDocumentToolCall({
     (event: React.MouseEvent<HTMLButtonElement>) => {
       if (isReadonly) {
         toast.error(
-          "Viewing files in shared chats is currently not supported."
+          "Viewing files in shared chats is currently not supported.",
         );
         return;
       }
@@ -128,23 +120,22 @@ function PureDocumentToolCall({
         isVisible: true,
       }));
     },
-    [isReadonly, setArtifact]
+    [isReadonly, setArtifact],
   );
 
   return (
     <button
       className="cursor pointer flex w-fit flex-row items-start justify-between gap-3 rounded-xl border px-3 py-2"
       onClick={handleClick}
-      type="button"
     >
       <div className="flex flex-row items-start gap-3">
         <div className="mt-1 text-neutral-500">
           {type === "create" ? (
-            <FileIcon />
+            <File />
           ) : type === "update" ? (
-            <PencilEditIcon />
+            <Pencil />
           ) : type === "request-suggestions" ? (
-            <MessageIcon />
+            <MessageCircle />
           ) : null}
         </div>
 
@@ -161,7 +152,7 @@ function PureDocumentToolCall({
         </div>
       </div>
 
-      <div className="mt-1 animate-spin">{<LoaderIcon />}</div>
+      <div className="mt-1 animate-spin">{<Loader />}</div>
     </button>
   );
 }

@@ -17,8 +17,7 @@ import {
   allowedModelIds,
   chatModels,
   DEFAULT_CHAT_MODEL,
-  getCapabilities,
-  getModelAvailability,
+  getModelCapabilities,
 } from "@/lib/ai/models";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import { getLanguageModel } from "@/lib/ai/providers";
@@ -38,6 +37,7 @@ import {
   saveMessages,
   updateChatTitleById,
   updateMessage,
+  updateChatPinnedById,
 } from "@/lib/db/queries";
 import type { DBMessage } from "@/lib/db/schema";
 import { ChatbotError } from "@/lib/errors";
@@ -49,11 +49,9 @@ import { type PostRequestBody, postRequestBodySchema } from "./schema";
 
 export const maxDuration = 60;
 
-const HEALTH_CHECK_DELAY_MS = 9000;
-
 function isModelStreamActivity(chunk: { type: string }) {
   return !["start", "start-step", "finish-step", "finish", "raw"].includes(
-    chunk.type
+    chunk.type,
   );
 }
 
@@ -78,8 +76,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { id, message, messages, selectedChatModel, selectedVisibilityType } =
-      requestBody;
+    const { id, message, messages, selectedChatModel } = requestBody;
 
     const [botIdResult, session] = await Promise.all([
       checkBotId().catch(() => null),
@@ -97,6 +94,11 @@ export async function POST(request: Request) {
     const chatModel = allowedModelIds.has(selectedChatModel)
       ? selectedChatModel
       : DEFAULT_CHAT_MODEL;
+
+    const capabilities = getModelCapabilities(chatModel);
+    const supportsTools = capabilities.tools;
+    const isReasoningModel = capabilities.reasoning;
+    const supportsVision = capabilities.vision;
 
     await checkIpRateLimit(ipAddress(request));
 
@@ -127,7 +129,6 @@ export async function POST(request: Request) {
         id,
         title: "New chat",
         userId: session.user.id,
-        visibility: selectedVisibilityType,
       });
       titlePromise = generateTitleFromUserMessage({ message });
     }
@@ -143,13 +144,13 @@ export async function POST(request: Request) {
               ?.filter(
                 (p: Record<string, unknown>) =>
                   p.state === "approval-responded" ||
-                  p.state === "output-denied"
+                  p.state === "output-denied",
               )
               .map((p: Record<string, unknown>) => [
                 String(p.toolCallId ?? ""),
                 p,
-              ]) ?? []
-        )
+              ]) ?? [],
+        ),
       );
       uiMessages = dbMessages.map((msg) => ({
         ...msg,
@@ -194,29 +195,30 @@ export async function POST(request: Request) {
       });
     }
 
-    const modelConfig = chatModels.find((m) => m.id === chatModel);
-    const modelCapabilities = await getCapabilities();
-    const capabilities = modelCapabilities[chatModel];
-    const isReasoningModel = capabilities?.reasoning === true;
-    const supportsTools = capabilities?.tools === true;
+    const hasImages = uiMessages.some((msg) =>
+      msg.parts?.some(
+        (part: any) =>
+          part.type === "file" && part.mediaType?.startsWith("image/"),
+      ),
+    );
 
+    if (hasImages && !supportsVision) {
+      return new ChatbotError(
+        "bad_request:model_does_not_support_images",
+      ).toResponse();
+    }
+
+    const modelConfig = chatModels.find((m) => m.id === chatModel);
+    const modelName = modelConfig?.name ?? chatModel;
     const modelMessages = await convertToModelMessages(uiMessages);
 
     const stream = createUIMessageStream({
       execute: async ({ writer: dataStream }) => {
-        const modelName = modelConfig?.name ?? chatModel;
         let hasModelActivity = false;
-        let healthCheckTimer: ReturnType<typeof setTimeout> | undefined;
-
-        const clearHealthCheckTimer = () => {
-          if (healthCheckTimer) {
-            clearTimeout(healthCheckTimer);
-          }
-        };
 
         const writeWaitingStatus = (
           phase: WaitingStatusData["phase"],
-          messageText: string
+          messageText: string,
         ) => {
           if (hasModelActivity && phase !== "thinking") {
             return;
@@ -235,35 +237,14 @@ export async function POST(request: Request) {
 
         writeWaitingStatus("waiting", "Waiting...");
 
-        healthCheckTimer = setTimeout(() => {
-          getModelAvailability(chatModel)
-            .then((availability) => {
-              if (availability === "impacted") {
-                writeWaitingStatus(
-                  "health",
-                  `${modelName} may be slow or unavailable right now...`
-                );
-              } else {
-                writeWaitingStatus("still-waiting", "Still waiting...");
-              }
-            })
-            .catch(() => {
-              writeWaitingStatus("still-waiting", "Still waiting...");
-            });
-        }, HEALTH_CHECK_DELAY_MS);
-
         const markModelActive = () => {
-          if (hasModelActivity) {
-            return;
-          }
+          if (hasModelActivity) return;
           hasModelActivity = true;
-          clearHealthCheckTimer();
           writeWaitingStatus("thinking", "Thinking...");
         };
 
         const stopWaitingStatus = () => {
           hasModelActivity = true;
-          clearHealthCheckTimer();
         };
 
         const result = streamText({
@@ -293,14 +274,6 @@ export async function POST(request: Request) {
           },
           onError() {
             stopWaitingStatus();
-          },
-          providerOptions: {
-            ...(modelConfig?.gatewayOrder && {
-              gateway: { order: modelConfig.gatewayOrder },
-            }),
-            ...(modelConfig?.reasoningEffort && {
-              openai: { reasoningEffort: modelConfig.reasoningEffort },
-            }),
           },
           stopWhen: isStepCount(5),
           telemetry: {
@@ -332,7 +305,7 @@ export async function POST(request: Request) {
           toUIMessageStream({
             sendReasoning: isReasoningModel,
             stream: result.stream,
-          })
+          }),
         );
 
         if (titlePromise) {
@@ -351,7 +324,7 @@ export async function POST(request: Request) {
           await Promise.all(
             finishedMessages.map(async (finishedMsg) => {
               const existingMsg = uiMessages.find(
-                (m) => m.id === finishedMsg.id
+                (m) => m.id === finishedMsg.id,
               );
               if (existingMsg) {
                 await updateMessage({
@@ -373,7 +346,7 @@ export async function POST(request: Request) {
                   },
                 ],
               });
-            })
+            }),
           );
         } else if (finishedMessages.length > 0) {
           await saveMessages({
@@ -389,14 +362,7 @@ export async function POST(request: Request) {
         }
       },
       onError: (error) => {
-        if (
-          error instanceof Error &&
-          error.message?.includes(
-            "AI Gateway requires a valid credit card on file to service requests"
-          )
-        ) {
-          return "AI Gateway requires a valid credit card on file to service requests. Please visit https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%3Fmodal%3Dadd-credit-card to add a card and unlock your free credits.";
-        }
+        console.error("Stream error:", error);
         return "Oops, an error occurred!";
       },
       originalMessages: isToolApprovalFlow ? uiMessages : undefined,
@@ -414,7 +380,7 @@ export async function POST(request: Request) {
             await createStreamId({ chatId: id, streamId });
             await streamContext.createNewResumableStream(
               streamId,
-              () => sseStream
+              () => sseStream,
             );
           }
         } catch {
@@ -428,15 +394,6 @@ export async function POST(request: Request) {
 
     if (error instanceof ChatbotError) {
       return error.toResponse();
-    }
-
-    if (
-      error instanceof Error &&
-      error.message?.includes(
-        "AI Gateway requires a valid credit card on file to service requests"
-      )
-    ) {
-      return new ChatbotError("bad_request:activate_gateway").toResponse();
     }
 
     console.error("Unhandled error in chat API:", error, { vercelId });
@@ -467,4 +424,51 @@ export async function DELETE(request: Request) {
   const deletedChat = await deleteChatById({ id });
 
   return Response.json(deletedChat, { status: 200 });
+}
+
+export async function PATCH(request: Request) {
+  const session = await auth();
+  if (!session?.user) {
+    return new ChatbotError("unauthorized:chat").toResponse();
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return new ChatbotError("bad_request:api").toResponse();
+  }
+
+  const { id, pinned, title } = body;
+  if (!id) {
+    return new ChatbotError("bad_request:api", "Missing chat id").toResponse();
+  }
+
+  // Проверяем, что чат принадлежит пользователю
+  const chat = await getChatById({ id });
+  if (!chat || chat.userId !== session.user.id) {
+    return new ChatbotError("forbidden:chat").toResponse();
+  }
+
+  // Обновление pinned
+  if (pinned !== undefined) {
+    if (typeof pinned !== "boolean") {
+      return new ChatbotError(
+        "bad_request:api",
+        "Invalid pinned value",
+      ).toResponse();
+    }
+    await updateChatPinnedById({ chatId: id, pinned });
+  }
+
+  // Обновление title
+  if (title !== undefined) {
+    if (typeof title !== "string" || title.trim().length === 0) {
+      return new ChatbotError("bad_request:api", "Invalid title").toResponse();
+    }
+    await updateChatTitleById({ chatId: id, title: title.trim() });
+  }
+
+  const updatedChat = await getChatById({ id });
+  return Response.json(updatedChat, { status: 200 });
 }

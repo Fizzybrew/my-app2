@@ -1,7 +1,6 @@
 import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-
 import { auth } from "@/app/(auth)/auth";
 
 const FileSchema = z.object({
@@ -60,7 +59,7 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json(
       { error: "Failed to process request" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -26,13 +26,19 @@ function PureCodeEditor({ content, onSaveContent, status }: EditorProps) {
     if (containerRef.current && !editorRef.current) {
       const startState = EditorState.create({
         doc: content,
-        extensions: [basicSetup, python(), oneDark],
+        extensions: [
+          basicSetup,
+          python(),
+          oneDark,
+          EditorView.editorAttributes.of({ "aria-label": "Code editor" }),
+        ],
       });
 
       editorRef.current = new EditorView({
         parent: containerRef.current,
         state: startState,
       });
+      editorRef.current.dom.setAttribute("aria-label", "Code editor");
     }
 
     return () => {
@@ -48,7 +54,7 @@ function PureCodeEditor({ content, onSaveContent, status }: EditorProps) {
       const updateListener = EditorView.updateListener.of((update) => {
         if (update.docChanged) {
           const transaction = update.transactions.find(
-            (tr) => !tr.annotation(Transaction.remote)
+            (tr) => !tr.annotation(Transaction.remote),
           );
 
           if (transaction) {
@@ -60,13 +66,9 @@ function PureCodeEditor({ content, onSaveContent, status }: EditorProps) {
 
       const scrollListener = EditorView.domEventHandlers({
         scroll() {
-          if (status !== "streaming") {
-            return;
-          }
+          if (status !== "streaming") return;
           const dom = editorRef.current?.scrollDOM;
-          if (!dom) {
-            return;
-          }
+          if (!dom) return;
           const atBottom =
             dom.scrollHeight - dom.scrollTop - dom.clientHeight < 40;
           userScrolledRef.current = !atBottom;
@@ -83,18 +85,18 @@ function PureCodeEditor({ content, onSaveContent, status }: EditorProps) {
           oneDark,
           updateListener,
           scrollListener,
+          EditorView.editorAttributes.of({ "aria-label": "Code editor" }),
         ],
         selection: currentSelection,
       });
 
       editorRef.current.setState(newState);
+      editorRef.current.dom.setAttribute("aria-label", "Code editor");
     }
   }, [onSaveContent, status]);
 
   useEffect(() => {
-    if (status !== "streaming") {
-      userScrolledRef.current = false;
-    }
+    if (status !== "streaming") userScrolledRef.current = false;
   }, [status]);
 
   useEffect(() => {
@@ -116,9 +118,7 @@ function PureCodeEditor({ content, onSaveContent, status }: EditorProps) {
         if (status === "streaming" && !userScrolledRef.current) {
           requestAnimationFrame(() => {
             const dom = editorRef.current?.scrollDOM;
-            if (dom) {
-              dom.scrollTo({ top: dom.scrollHeight });
-            }
+            if (dom) dom.scrollTo({ top: dom.scrollHeight });
           });
         }
       }
@@ -127,28 +127,20 @@ function PureCodeEditor({ content, onSaveContent, status }: EditorProps) {
 
   return (
     <div
-      className="not-prose relative w-full min-h-[300px] pb-[calc(50dvh)]"
+      className="not-prose relative size-full"
       ref={containerRef}
+      aria-label="Code editor"
     />
   );
 }
 
 export const CodeEditor = memo(PureCodeEditor, (prevProps, nextProps) => {
-  if (prevProps.status === "streaming" && nextProps.status === "streaming") {
+  if (prevProps.status === "streaming" && nextProps.status === "streaming")
     return false;
-  }
-
-  if (prevProps.content !== nextProps.content) {
+  if (prevProps.content !== nextProps.content) return false;
+  if (prevProps.status !== nextProps.status) return false;
+  if (prevProps.currentVersionIndex !== nextProps.currentVersionIndex)
     return false;
-  }
-
-  if (prevProps.status !== nextProps.status) {
-    return false;
-  }
-
-  if (prevProps.currentVersionIndex !== nextProps.currentVersionIndex) {
-    return false;
-  }
 
   return true;
 });

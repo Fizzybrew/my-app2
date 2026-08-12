@@ -1,7 +1,6 @@
-import type { ComponentProps, ReactNode } from "react";
-
 import {
   Command,
+  CommandDialog,
   CommandEmpty,
   CommandGroup,
   CommandInput,
@@ -11,54 +10,55 @@ import {
   CommandShortcut,
 } from "@/components/ui/command";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import type { Popover as PopoverPrimitive } from "radix-ui";
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import type { ComponentProps, ReactNode } from "react";
 
-export type ModelSelectorProps = React.ComponentProps<typeof PopoverPrimitive.Root>;
+export type ModelSelectorProps = ComponentProps<typeof Dialog>;
 
 export const ModelSelector = (props: ModelSelectorProps) => (
-  <Popover {...props} />
+  <Dialog {...props} />
 );
 
-export type ModelSelectorTriggerProps = ComponentProps<typeof PopoverTrigger>;
+export type ModelSelectorTriggerProps = ComponentProps<typeof DialogTrigger>;
 
 export const ModelSelectorTrigger = (props: ModelSelectorTriggerProps) => (
-  <PopoverTrigger {...props} />
+  <DialogTrigger {...props} />
 );
 
-export type ModelSelectorContentProps = ComponentProps<typeof PopoverContent> & {
-  commandDefaultValue?: ComponentProps<typeof Command>["defaultValue"];
+export type ModelSelectorContentProps = ComponentProps<typeof DialogContent> & {
   title?: ReactNode;
 };
 
 export const ModelSelectorContent = ({
   className,
-  commandDefaultValue,
   children,
-  title: _title,
+  title = "Model Selector",
   ...props
 }: ModelSelectorContentProps) => (
-  <PopoverContent
-    align="start"
+  <DialogContent
+    aria-describedby={undefined}
     className={cn(
-      "w-[280px] p-0 rounded-xl border border-border/60 bg-card/95 backdrop-blur-xl shadow-[var(--shadow-float)]",
+      "outline! border-none! p-0 outline-border! outline-solid!",
       className
     )}
-    side="top"
-    sideOffset={8}
     {...props}
   >
-    <Command
-      className="**:data-[slot=command-input-wrapper]:h-auto"
-      defaultValue={commandDefaultValue}
-    >
+    <DialogTitle className="sr-only">{title}</DialogTitle>
+    <Command className="**:data-[slot=command-input-wrapper]:h-auto">
       {children}
     </Command>
-  </PopoverContent>
+  </DialogContent>
+);
+
+export type ModelSelectorDialogProps = ComponentProps<typeof CommandDialog>;
+
+export const ModelSelectorDialog = (props: ModelSelectorDialogProps) => (
+  <CommandDialog {...props} />
 );
 
 export type ModelSelectorInputProps = ComponentProps<typeof CommandInput>;
@@ -67,13 +67,13 @@ export const ModelSelectorInput = ({
   className,
   ...props
 }: ModelSelectorInputProps) => (
-  <CommandInput className={cn("h-auto py-2.5 text-[13px]", className)} {...props} />
+  <CommandInput className={cn("h-auto py-3.5", className)} {...props} />
 );
 
 export type ModelSelectorListProps = ComponentProps<typeof CommandList>;
 
-export const ModelSelectorList = ({ className, ...props }: ModelSelectorListProps) => (
-  <CommandList className={cn("max-h-[280px]", className)} {...props} />
+export const ModelSelectorList = (props: ModelSelectorListProps) => (
+  <CommandList {...props} />
 );
 
 export type ModelSelectorEmptyProps = ComponentProps<typeof CommandEmpty>;
@@ -90,8 +90,8 @@ export const ModelSelectorGroup = (props: ModelSelectorGroupProps) => (
 
 export type ModelSelectorItemProps = ComponentProps<typeof CommandItem>;
 
-export const ModelSelectorItem = ({ className, ...props }: ModelSelectorItemProps) => (
-  <CommandItem className={cn("w-full text-[13px] rounded-lg", className)} {...props} />
+export const ModelSelectorItem = (props: ModelSelectorItemProps) => (
+  <CommandItem {...props} />
 );
 
 export type ModelSelectorShortcutProps = ComponentProps<typeof CommandShortcut>;
@@ -181,10 +181,10 @@ export const ModelSelectorLogo = ({
   <img
     {...props}
     alt={`${provider} logo`}
-    className={cn("size-4 dark:invert", className)}
-    height={16}
+    className={cn("size-3 dark:invert", className)}
+    height={12}
     src={`https://models.dev/logos/${provider}.svg`}
-    width={16}
+    width={12}
   />
 );
 
@@ -196,7 +196,7 @@ export const ModelSelectorLogoGroup = ({
 }: ModelSelectorLogoGroupProps) => (
   <div
     className={cn(
-      "flex shrink-0 items-center -space-x-1 [&>img]:rounded-full [&>img]:p-px [&>img]:ring-1 [&>img]:ring-border/30",
+      "flex shrink-0 items-center -space-x-1 [&>img]:rounded-full [&>img]:bg-background [&>img]:p-px [&>img]:ring-1 dark:[&>img]:bg-foreground",
       className
     )}
     {...props}

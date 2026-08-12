@@ -1,6 +1,6 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import equal from "fast-deep-equal";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { memo } from "react";
 import { useMessages } from "@/hooks/use-messages";
 import type { Vote } from "@/lib/db/schema";
@@ -70,13 +70,13 @@ function PureArtifactMessages({
         {status === "submitted" &&
           !messages.some((msg) =>
             msg.parts?.some(
-              (part) => "state" in part && part.state === "approval-responded"
-            )
+              (part) => "state" in part && part.state === "approval-responded",
+            ),
           ) && <ThinkingMessage key="thinking" />}
       </AnimatePresence>
 
       <motion.div
-        className="min-h-[24px] min-w-[24px] shrink-0"
+        className="min-h-6 min-w-6 shrink-0"
         onViewportEnter={onViewportEnter}
         onViewportLeave={onViewportLeave}
         ref={messagesEndRef}
@@ -87,27 +87,18 @@ function PureArtifactMessages({
 
 function areEqual(
   prevProps: ArtifactMessagesProps,
-  nextProps: ArtifactMessagesProps
+  nextProps: ArtifactMessagesProps,
 ) {
   if (
     prevProps.artifactStatus === "streaming" &&
     nextProps.artifactStatus === "streaming"
-  ) {
+  )
     return true;
-  }
 
-  if (prevProps.status !== nextProps.status) {
-    return false;
-  }
-  if (prevProps.status && nextProps.status) {
-    return false;
-  }
-  if (prevProps.messages.length !== nextProps.messages.length) {
-    return false;
-  }
-  if (!equal(prevProps.votes, nextProps.votes)) {
-    return false;
-  }
+  if (prevProps.status !== nextProps.status) return false;
+  if (prevProps.status && nextProps.status) return false;
+  if (prevProps.messages.length !== nextProps.messages.length) return false;
+  if (!equal(prevProps.votes, nextProps.votes)) return false;
 
   return true;
 }

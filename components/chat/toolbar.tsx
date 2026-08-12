@@ -1,8 +1,9 @@
 "use client";
+
 import type { UseChatHelpers } from "@ai-sdk/react";
 import cx from "classnames";
-import { motion, useMotionValue, useTransform } from "framer-motion";
-import { WrenchIcon, XIcon } from "lucide-react";
+import { motion, useMotionValue, useTransform } from "motion/react";
+import { ArrowDownWideNarrow, ArrowUp, Square, WrenchIcon } from "lucide-react";
 import { nanoid } from "nanoid";
 import {
   type Dispatch,
@@ -22,10 +23,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 import type { ChatMessage } from "@/lib/types";
 import { type ArtifactKind, artifactDefinitions } from "./artifact";
 import type { ArtifactToolbarItem } from "./create-artifact";
-import { ArrowUpIcon, StopIcon, SummarizeIcon } from "./icons";
+
+const MotionButton = motion.create(Button);
 
 type ToolProps = {
   description: string;
@@ -66,9 +69,7 @@ const Tool = ({
   const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
-    if (selectedTool !== description) {
-      setIsHovered(false);
-    }
+    if (selectedTool !== description) setIsHovered(false);
   }, [selectedTool, description]);
 
   const handleSelect = useCallback(() => {
@@ -100,9 +101,7 @@ const Tool = ({
   ]);
 
   const handleHoverEnd = useCallback(() => {
-    if (selectedTool !== description) {
-      setIsHovered(false);
-    }
+    if (selectedTool !== description) setIsHovered(false);
   }, [description, selectedTool]);
 
   const handleHoverStart = useCallback(() => {
@@ -111,21 +110,18 @@ const Tool = ({
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
-      if (event.key === "Enter") {
-        handleSelect();
-      }
+      if (event.key === "Enter") handleSelect();
     },
-    [handleSelect]
+    [handleSelect],
   );
 
   return (
     <Tooltip open={isHovered && !isAnimating}>
       <TooltipTrigger asChild>
-        <motion.div
+        <MotionButton
+          size="icon"
+          variant={selectedTool === description ? "default" : "ghost"}
           animate={{ opacity: 1, transition: { delay: 0.1 } }}
-          className={cx("rounded-full p-3", {
-            "bg-primary text-primary-foreground!": selectedTool === description,
-          })}
           exit={{
             opacity: 0,
             scale: 0.9,
@@ -136,23 +132,16 @@ const Tool = ({
           onHoverEnd={handleHoverEnd}
           onHoverStart={handleHoverStart}
           onKeyDown={handleKeyDown}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
+          aria-label={description}
         >
           {selectedTool === description ? (
-            <ArrowUpIcon />
+            <ArrowUp />
           ) : isValidElement(icon) ? (
             icon
           ) : null}
-        </motion.div>
+        </MotionButton>
       </TooltipTrigger>
-      <TooltipContent
-        className="rounded-2xl bg-foreground p-3 px-4 text-background"
-        side="left"
-        sideOffset={16}
-      >
-        {description}
-      </TooltipContent>
+      <TooltipContent side="left">{description}</TooltipContent>
     </Tooltip>
   );
 };
@@ -218,7 +207,7 @@ const ReadingLevelSelector = ({
       {randomArr.map((id) => (
         <motion.div
           animate={{ opacity: 1 }}
-          className="flex size-[40px] flex-row items-center justify-center"
+          className="flex size-10 flex-row items-center justify-center"
           exit={{ opacity: 0 }}
           initial={{ opacity: 0 }}
           key={id}
@@ -237,7 +226,7 @@ const ReadingLevelSelector = ({
                 {
                   "bg-background text-foreground": currentLevel === 2,
                   "bg-primary text-primary-foreground": currentLevel !== 2,
-                }
+                },
               )}
               drag="y"
               dragConstraints={{ bottom: 0, top: -dragConstraints }}
@@ -248,17 +237,11 @@ const ReadingLevelSelector = ({
               onDragStart={handleDragStart}
               style={{ y }}
               transition={{ duration: 0.1 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
             >
-              {currentLevel === 2 ? <SummarizeIcon /> : <ArrowUpIcon />}
+              {currentLevel === 2 ? <ArrowDownWideNarrow /> : <ArrowUp />}
             </motion.div>
           </TooltipTrigger>
-          <TooltipContent
-            className="rounded-2xl bg-foreground p-3 px-4 text-background text-sm"
-            side="left"
-            sideOffset={16}
-          >
+          <TooltipContent side="left">
             {READING_LEVELS[currentLevel]}
           </TooltipContent>
         </Tooltip>
@@ -282,7 +265,7 @@ export const Tools = ({
 }) => (
   <motion.div
     animate={{ opacity: 1, scale: 1 }}
-    className="flex flex-col gap-1.5"
+    className="flex flex-col gap-0.5"
     exit={{ opacity: 0, scale: 0.95 }}
     initial={{ opacity: 0, scale: 0.95 }}
   >
@@ -296,6 +279,7 @@ export const Tools = ({
         selectedTool={selectedTool}
         sendMessage={sendMessage}
         setSelectedTool={setSelectedTool}
+        aria-label={tool.description}
       />
     ))}
   </motion.div>
@@ -303,7 +287,7 @@ export const Tools = ({
 
 const createFixErrorTool = (
   consoleOutput: string,
-  documentId?: string
+  documentId?: string,
 ): ArtifactToolbarItem => ({
   description: "Fix error",
   icon: <WrenchIcon className="size-4" />,
@@ -331,7 +315,6 @@ const PureToolbar = ({
   consoleError,
   documentId,
   artifactActions,
-  onClose,
 }: {
   isToolbarVisible: boolean;
   setIsToolbarVisible: Dispatch<SetStateAction<boolean>>;
@@ -343,7 +326,6 @@ const PureToolbar = ({
   consoleError?: string;
   documentId?: string;
   artifactActions?: ReactNode;
-  onClose?: () => void;
 }) => {
   const toolbarRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
@@ -357,9 +339,7 @@ const PureToolbar = ({
   });
 
   const startCloseTimer = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
     timeoutRef.current = setTimeout(() => {
       setSelectedTool(null);
@@ -368,24 +348,18 @@ const PureToolbar = ({
   }, [setIsToolbarVisible]);
 
   const cancelCloseTimer = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
   }, []);
 
   useEffect(
     () => () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     },
-    []
+    [],
   );
 
   useEffect(() => {
-    if (status === "streaming") {
-      setIsToolbarVisible(false);
-    }
+    if (status === "streaming") setIsToolbarVisible(false);
   }, [status, setIsToolbarVisible]);
 
   const handleAnimationComplete = useCallback(() => {
@@ -397,17 +371,13 @@ const PureToolbar = ({
   }, []);
 
   const handleHoverEnd = useCallback(() => {
-    if (status === "streaming") {
-      return;
-    }
+    if (status === "streaming") return;
 
     startCloseTimer();
   }, [startCloseTimer, status]);
 
   const handleHoverStart = useCallback(() => {
-    if (status === "streaming") {
-      return;
-    }
+    if (status === "streaming") return;
 
     cancelCloseTimer();
     setIsToolbarVisible(true);
@@ -419,12 +389,10 @@ const PureToolbar = ({
   }, [setMessages, stop]);
 
   const artifactDefinition = artifactDefinitions.find(
-    (definition) => definition.kind === artifactKind
+    (definition) => definition.kind === artifactKind,
   );
 
-  if (!artifactDefinition) {
-    throw new Error("Artifact definition not found!");
-  }
+  if (!artifactDefinition) throw new Error("Artifact definition not found!");
 
   const toolsByArtifactKind = consoleError
     ? [
@@ -433,15 +401,13 @@ const PureToolbar = ({
       ]
     : artifactDefinition.toolbar;
 
-  if (toolsByArtifactKind.length === 0) {
-    return null;
-  }
+  if (toolsByArtifactKind.length === 0) return null;
 
   return (
     <TooltipProvider delayDuration={0}>
       <motion.div
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="fixed right-6 bottom-6 z-50 flex cursor-pointer flex-col items-center rounded-3xl border bg-background py-1 shadow-lg"
+        className="fixed right-6 bottom-6 z-50 flex cursor-pointer flex-col items-center rounded-3xl gap-0.5 border bg-background py-1 shadow-lg"
         exit={{ opacity: 0, transition: { duration: 0.1 }, y: -20 }}
         initial={{ opacity: 0, scale: 1, y: -20 }}
         onAnimationComplete={handleAnimationComplete}
@@ -451,28 +417,24 @@ const PureToolbar = ({
         ref={toolbarRef}
         transition={{ damping: 25, stiffness: 300, type: "spring" }}
       >
-        {onClose ? (
-          <motion.div
-            animate={{ opacity: 1 }}
-            className="p-3 text-muted-foreground transition-colors hover:text-foreground"
-            initial={{ opacity: 0 }}
-            onClick={onClose}
-          >
-            <XIcon className="size-4" />
-          </motion.div>
-        ) : null}
-
-        {status === "streaming" ? (
-          <motion.div
-            animate={{ scale: 1.4 }}
-            className="p-3"
-            exit={{ scale: 1 }}
-            initial={{ scale: 1 }}
-            key="stop-icon"
-            onClick={handleStop}
-          >
-            <StopIcon />
-          </motion.div>
+        {status === "submitted" || status === "streaming" ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <MotionButton
+                size="icon"
+                variant="ghost"
+                animate={{ scale: 1.4 }}
+                exit={{ scale: 1 }}
+                initial={{ scale: 1 }}
+                key="stop-icon"
+                onClick={handleStop}
+                aria-label="Stop generating"
+              >
+                <Square fill="currentColor" />
+              </MotionButton>
+            </TooltipTrigger>
+            <TooltipContent side="left">Stop generating</TooltipContent>
+          </Tooltip>
         ) : selectedTool === "adjust-reading-level" ? (
           <ReadingLevelSelector
             isAnimating={isAnimating}
@@ -499,24 +461,11 @@ const PureToolbar = ({
 };
 
 export const Toolbar = memo(PureToolbar, (prevProps, nextProps) => {
-  if (prevProps.status !== nextProps.status) {
-    return false;
-  }
-  if (prevProps.isToolbarVisible !== nextProps.isToolbarVisible) {
-    return false;
-  }
-  if (prevProps.artifactKind !== nextProps.artifactKind) {
-    return false;
-  }
-  if (prevProps.consoleError !== nextProps.consoleError) {
-    return false;
-  }
-  if (prevProps.artifactActions !== nextProps.artifactActions) {
-    return false;
-  }
-  if (prevProps.onClose !== nextProps.onClose) {
-    return false;
-  }
+  if (prevProps.status !== nextProps.status) return false;
+  if (prevProps.isToolbarVisible !== nextProps.isToolbarVisible) return false;
+  if (prevProps.artifactKind !== nextProps.artifactKind) return false;
+  if (prevProps.consoleError !== nextProps.consoleError) return false;
+  if (prevProps.artifactActions !== nextProps.artifactActions) return false;
 
   return true;
 });

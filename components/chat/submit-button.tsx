@@ -1,10 +1,8 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
-
-import { LoaderIcon } from "@/components/chat/icons";
-
 import { Button } from "../ui/button";
+import { Loader } from "lucide-react";
 
 export function SubmitButton({
   children,
@@ -18,15 +16,14 @@ export function SubmitButton({
   return (
     <Button
       aria-disabled={pending || isSuccessful}
-      className="relative"
       disabled={pending || isSuccessful}
       type={pending ? "button" : "submit"}
     >
       {children}
 
       {pending || isSuccessful ? (
-        <span className="absolute right-4 animate-spin">
-          <LoaderIcon />
+        <span className="animate-spin">
+          <Loader />
         </span>
       ) : null}
 

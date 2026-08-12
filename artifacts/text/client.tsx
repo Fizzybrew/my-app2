@@ -2,17 +2,17 @@ import { toast } from "sonner";
 import { Artifact } from "@/components/chat/create-artifact";
 import { DiffView } from "@/components/chat/diffview";
 import { DocumentSkeleton } from "@/components/chat/document-skeleton";
-import {
-  ClockRewind,
-  CopyIcon,
-  MessageIcon,
-  PenIcon,
-  RedoIcon,
-  UndoIcon,
-} from "@/components/chat/icons";
 import { Editor } from "@/components/chat/text-editor";
 import type { Suggestion } from "@/lib/db/schema";
 import { getSuggestions } from "../actions";
+import {
+  Brush,
+  Copy,
+  MessageCircle,
+  RotateCcw,
+  RotateCcwClock,
+  RotateCw,
+} from "lucide-react";
 
 type TextArtifactMetadata = {
   suggestions: Suggestion[];
@@ -22,7 +22,7 @@ export const textArtifact = new Artifact<"text", TextArtifactMetadata>({
   actions: [
     {
       description: "View changes",
-      icon: <ClockRewind size={18} />,
+      icon: <RotateCcwClock />,
       isDisabled: ({ currentVersionIndex }) => {
         if (currentVersionIndex === 0) {
           return true;
@@ -36,7 +36,7 @@ export const textArtifact = new Artifact<"text", TextArtifactMetadata>({
     },
     {
       description: "View Previous version",
-      icon: <UndoIcon size={18} />,
+      icon: <RotateCcw />,
       isDisabled: ({ currentVersionIndex }) => {
         if (currentVersionIndex === 0) {
           return true;
@@ -50,7 +50,7 @@ export const textArtifact = new Artifact<"text", TextArtifactMetadata>({
     },
     {
       description: "View Next version",
-      icon: <RedoIcon size={18} />,
+      icon: <RotateCw />,
       isDisabled: ({ isCurrentVersion }) => {
         if (isCurrentVersion) {
           return true;
@@ -64,7 +64,7 @@ export const textArtifact = new Artifact<"text", TextArtifactMetadata>({
     },
     {
       description: "Copy to clipboard",
-      icon: <CopyIcon size={18} />,
+      icon: <Copy />,
       onClick: ({ content }) => {
         navigator.clipboard.writeText(content);
         toast.success("Copied to clipboard!");
@@ -150,7 +150,7 @@ export const textArtifact = new Artifact<"text", TextArtifactMetadata>({
   toolbar: [
     {
       description: "Add final polish",
-      icon: <PenIcon />,
+      icon: <Brush />,
       onClick: ({ sendMessage }) => {
         sendMessage({
           parts: [
@@ -165,7 +165,7 @@ export const textArtifact = new Artifact<"text", TextArtifactMetadata>({
     },
     {
       description: "Request suggestions",
-      icon: <MessageIcon />,
+      icon: <MessageCircle />,
       onClick: ({ sendMessage }) => {
         sendMessage({
           parts: [

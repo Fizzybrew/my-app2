@@ -1,15 +1,19 @@
 "use client";
 
 import { isAfter } from "date-fns";
-import { motion } from "framer-motion";
-import { ChevronLeftIcon, ChevronRightIcon, DiffIcon } from "lucide-react";
+import { motion } from "motion/react";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  DiffIcon,
+  Loader,
+} from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import { useCallback, useState } from "react";
 import { useSWRConfig } from "swr";
 import { useArtifact } from "@/hooks/use-artifact";
 import type { Document } from "@/lib/db/schema";
 import { cn, getDocumentTimestampByIndex } from "@/lib/utils";
-import { LoaderIcon } from "./icons";
 
 type VersionFooterProps = {
   handleVersionChange: (type: "next" | "prev" | "toggle" | "latest") => void;
@@ -27,10 +31,8 @@ export const VersionFooter = ({
   setMode,
 }: VersionFooterProps) => {
   const { artifact } = useArtifact();
-
   const { mutate } = useSWRConfig();
   const [isMutating, setIsMutating] = useState(false);
-
   const isFirst = currentVersionIndex === 0;
   const isLast = documents
     ? currentVersionIndex === documents.length - 1
@@ -48,9 +50,7 @@ export const VersionFooter = ({
   }, [mode, setMode]);
 
   const handleRestore = useCallback(async () => {
-    if (!documents) {
-      return;
-    }
+    if (!documents) return;
 
     setIsMutating(true);
 
@@ -60,11 +60,11 @@ export const VersionFooter = ({
         await fetch(
           `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/document?id=${artifact.documentId}&timestamp=${getDocumentTimestampByIndex(
             documents,
-            currentVersionIndex
+            currentVersionIndex,
           )}`,
           {
             method: "DELETE",
-          }
+          },
         ),
         {
           optimisticData: documents
@@ -75,14 +75,14 @@ export const VersionFooter = ({
                     new Date(
                       getDocumentTimestampByIndex(
                         documents,
-                        currentVersionIndex
-                      )
-                    )
-                  )
+                        currentVersionIndex,
+                      ),
+                    ),
+                  ),
                 ),
               ]
             : [],
-        }
+        },
       );
     } finally {
       setIsMutating(false);
@@ -94,9 +94,7 @@ export const VersionFooter = ({
     handleVersionChange("latest");
   }, [handleVersionChange, setMode]);
 
-  if (!documents) {
-    return null;
-  }
+  if (!documents) return null;
 
   return (
     <motion.div
@@ -112,18 +110,16 @@ export const VersionFooter = ({
             className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
             disabled={isFirst}
             onClick={handlePrevious}
-            type="button"
           >
             <ChevronLeftIcon className="size-4" />
           </button>
-          <span className="min-w-[4rem] text-center text-xs tabular-nums text-muted-foreground">
+          <span className="min-w-16 text-center text-xs tabular-nums text-muted-foreground">
             {currentVersionIndex + 1} of {documents.length}
           </span>
           <button
             className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
             disabled={isLast}
             onClick={handleNext}
-            type="button"
           >
             <ChevronRightIcon className="size-4" />
           </button>
@@ -132,11 +128,10 @@ export const VersionFooter = ({
         <button
           className={cn(
             "flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-            mode === "diff" && "bg-muted text-foreground"
+            mode === "diff" && "bg-muted text-foreground",
           )}
           onClick={handleToggleMode}
           title="Show changes"
-          type="button"
         >
           <DiffIcon className="size-4" />
         </button>
@@ -147,19 +142,17 @@ export const VersionFooter = ({
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-foreground px-3 py-1.5 text-sm font-medium text-background transition-all duration-150 hover:opacity-90 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
           disabled={isMutating}
           onClick={handleRestore}
-          type="button"
         >
           Restore
           {isMutating ? (
             <div className="animate-spin">
-              <LoaderIcon size={14} />
+              <Loader size={14} />
             </div>
           ) : null}
         </button>
         <button
           className="inline-flex items-center justify-center rounded-lg border border-border px-3 py-1.5 text-sm font-medium transition-all duration-150 hover:bg-muted active:scale-[0.98]"
           onClick={handleLatest}
-          type="button"
         >
           Latest
         </button>

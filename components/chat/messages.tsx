@@ -6,8 +6,8 @@ import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useDataStream } from "./data-stream-provider";
-import { Greeting } from "./greeting";
 import { PreviewMessage, ThinkingMessage } from "./message";
+import { Button } from "../ui/button";
 
 type MessagesProps = {
   addToolApprovalResponse: UseChatHelpers<ChatMessage>["addToolApprovalResponse"];
@@ -21,7 +21,7 @@ type MessagesProps = {
   isArtifactVisible: boolean;
   isLoading?: boolean;
   selectedModelId: string;
-  onEditMessage?: (message: ChatMessage) => void;
+  className?: string;
 };
 
 function PureMessages({
@@ -36,7 +36,7 @@ function PureMessages({
   isArtifactVisible,
   isLoading,
   selectedModelId: _selectedModelId,
-  onEditMessage,
+  className,
 }: MessagesProps) {
   const {
     containerRef: messagesContainerRef,
@@ -64,21 +64,13 @@ function PureMessages({
   }, [scrollToBottom]);
 
   return (
-    <div className="relative flex-1 bg-background">
-      {messages.length === 0 && !isLoading && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-          <Greeting />
-        </div>
-      )}
+    <div className={cn("relative flex-1 bg-background", className)}>
       <div
-        className={cn(
-          "absolute inset-0 touch-pan-y overflow-y-auto",
-          messages.length > 0 ? "bg-background" : "bg-transparent"
-        )}
+        className={cn("absolute inset-0 touch-pan-y overflow-y-auto")}
         ref={messagesContainerRef}
         style={isArtifactVisible ? { scrollbarWidth: "none" } : undefined}
       >
-        <div className="mx-auto flex min-h-full min-w-0 max-w-4xl flex-col gap-5 px-2 py-6 md:gap-7 md:px-4">
+        <div className="mx-auto flex min-h-full min-w-0 max-w-3xl flex-col gap-5 px-4 lg:px-2 pt-15 pb-[120.66px] md:gap-7">
           {messages.map((message, index) => (
             <PreviewMessage
               addToolApprovalResponse={addToolApprovalResponse}
@@ -89,7 +81,6 @@ function PureMessages({
               isReadonly={isReadonly}
               key={message.id}
               message={message}
-              onEdit={onEditMessage}
               regenerate={regenerate}
               requiresScrollPadding={
                 hasSentMessage && index === messages.length - 1
@@ -107,25 +98,23 @@ function PureMessages({
             <ThinkingMessage />
           )}
 
-          <div
-            className="min-h-[24px] min-w-[24px] shrink-0"
-            ref={messagesEndRef}
-          />
+          <div className="h-0 w-0 shrink-0" ref={messagesEndRef} />
         </div>
       </div>
 
-      <button
+      <Button
         aria-label="Scroll to bottom"
-        className={`absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center rounded-full border border-border/50 bg-card/90 px-3.5 shadow-[var(--shadow-float)] backdrop-blur-lg transition-all duration-200 h-7 text-[10px] ${
+        className={`absolute bottom-35 left-1/2 z-10 -translate-x-1/2 ${
           isAtBottom
             ? "pointer-events-none scale-90 opacity-0"
             : "pointer-events-auto scale-100 opacity-100"
         }`}
         onClick={handleScrollToBottom}
-        type="button"
+        variant="outline"
+        size="icon"
       >
-        <ArrowDownIcon className="size-3 text-muted-foreground" />
-      </button>
+        <ArrowDownIcon />
+      </Button>
     </div>
   );
 }

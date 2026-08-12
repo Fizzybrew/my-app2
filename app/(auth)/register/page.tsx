@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import { useActionState, useEffect, useState } from "react";
 import { AuthForm } from "@/components/chat/auth-form";
 import { SubmitButton } from "@/components/chat/submit-button";
-import { toast } from "@/components/chat/toast";
+import { toast } from "sonner";
 import { type RegisterActionState, register } from "../actions";
 
 export default function Page() {
@@ -16,7 +16,7 @@ export default function Page() {
 
   const [state, formAction] = useActionState<RegisterActionState, FormData>(
     register,
-    { status: "idle" }
+    { status: "idle" },
   );
 
   const { update: updateSession } = useSession();
@@ -24,16 +24,13 @@ export default function Page() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: router and updateSession are stable refs
   useEffect(() => {
     if (state.status === "user_exists") {
-      toast({ description: "Account already exists!", type: "error" });
+      toast.error("Account already exists!");
     } else if (state.status === "failed") {
-      toast({ description: "Failed to create account!", type: "error" });
+      toast.error("Failed to create account!");
     } else if (state.status === "invalid_data") {
-      toast({
-        description: "Failed validating your submission!",
-        type: "error",
-      });
+      toast.error("Failed validating your submission!");
     } else if (state.status === "success") {
-      toast({ description: "Account created!", type: "success" });
+      toast.success("Account created!");
       setIsSuccessful(true);
       updateSession();
       router.refresh();
@@ -47,11 +44,12 @@ export default function Page() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold tracking-tight">Create account</h1>
-      <p className="text-sm text-muted-foreground">Get started for free</p>
+      <h1 className="text-3xl font-semibold tracking-tight text-center mb-4">
+        Sign Up
+      </h1>
       <AuthForm action={handleSubmit} defaultEmail={email}>
         <SubmitButton isSuccessful={isSuccessful}>Sign up</SubmitButton>
-        <p className="text-center text-[13px] text-muted-foreground">
+        <p className="text-center text-sm text-muted-foreground">
           {"Have an account? "}
           <Link
             className="text-foreground underline-offset-4 hover:underline"

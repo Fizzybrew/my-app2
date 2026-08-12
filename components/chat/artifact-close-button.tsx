@@ -1,6 +1,8 @@
 import { memo, useCallback } from "react";
 import { initialArtifactData, useArtifact } from "@/hooks/use-artifact";
-import { CrossIcon } from "./icons";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { Button } from "../ui/button";
+import { X } from "lucide-react";
 
 function PureArtifactCloseButton() {
   const { setArtifact } = useArtifact();
@@ -11,19 +13,24 @@ function PureArtifactCloseButton() {
             ...currentArtifact,
             isVisible: false,
           }
-        : { ...initialArtifactData, status: "idle" }
+        : { ...initialArtifactData, status: "idle" },
     );
   }, [setArtifact]);
 
   return (
-    <button
-      className="group flex size-8 items-center justify-center rounded-lg border border-transparent text-muted-foreground transition-all duration-150 hover:border-border hover:bg-muted hover:text-foreground active:scale-95"
-      data-testid="artifact-close-button"
-      onClick={handleClick}
-      type="button"
-    >
-      <CrossIcon size={16} />
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          data-testid="artifact-close-button"
+          onClick={handleClick}
+          variant="ghost"
+          size="icon"
+        >
+          <X />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>Close</TooltipContent>
+    </Tooltip>
   );
 }
 

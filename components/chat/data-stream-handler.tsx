@@ -15,9 +15,7 @@ export function DataStreamHandler() {
   const { artifact, setArtifact, setMetadata } = useArtifact();
 
   useEffect(() => {
-    if (!dataStream?.length) {
-      return;
-    }
+    if (!dataStream?.length) return;
 
     const newDeltas = dataStream.slice();
     setDataStream([]);
@@ -29,7 +27,7 @@ export function DataStreamHandler() {
       }
       const artifactDefinition = artifactDefinitions.find(
         (currentArtifactDefinition) =>
-          currentArtifactDefinition.kind === artifact.kind
+          currentArtifactDefinition.kind === artifact.kind,
       );
 
       if (artifactDefinition?.onStreamPart) {
@@ -41,9 +39,8 @@ export function DataStreamHandler() {
       }
 
       setArtifact((draftArtifact) => {
-        if (!draftArtifact) {
+        if (!draftArtifact)
           return { ...initialArtifactData, status: "streaming" };
-        }
 
         switch (delta.type) {
           case "data-id":

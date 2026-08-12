@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   description: "Next.js chatbot template using the AI SDK.",
@@ -12,20 +13,12 @@ export const metadata: Metadata = {
   title: "Next.js Chatbot Template",
 };
 
-export const viewport = {
-  maximumScale: 1,
-};
-
-const geist = Geist({
-  display: "swap",
-  subsets: ["latin"],
-  variable: "--font-geist",
-});
+const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 const geistMono = Geist_Mono({
   display: "swap",
   subsets: ["latin"],
-  variable: "--font-geist-mono",
+  variable: "--font-mono",
 });
 
 const LIGHT_THEME_COLOR = "hsl(0 0% 100%)";
@@ -55,11 +48,16 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      className={`${geist.variable} ${geistMono.variable}`}
+      className={cn(geistMono.variable, "font-sans", inter.variable)}
       lang="en"
       suppressHydrationWarning
     >
       <head>
+        <link
+          rel="preconnect"
+          href="https://cdn.jsdelivr.net"
+          crossOrigin="anonymous"
+        />
         <script
           // biome-ignore lint/security/noDangerouslySetInnerHtml: "Required"
           dangerouslySetInnerHTML={{

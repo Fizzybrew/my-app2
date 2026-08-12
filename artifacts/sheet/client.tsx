@@ -1,14 +1,23 @@
 import { parse, unparse } from "papaparse";
 import { toast } from "sonner";
 import { Artifact } from "@/components/chat/create-artifact";
-import {
-  CopyIcon,
-  LineChartIcon,
-  RedoIcon,
-  SparklesIcon,
-  UndoIcon,
-} from "@/components/chat/icons";
-import { SpreadsheetEditor } from "@/components/chat/sheet-editor";
+import dynamic from "next/dynamic";
+import { ChartLine, Copy, RotateCcw, RotateCw, Sparkles } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+const SpreadsheetEditor = dynamic(
+  () =>
+    import("@/components/chat/sheet-editor").then(
+      (mod) => mod.SpreadsheetEditor,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full w-full items-center justify-center">
+        <Spinner />
+      </div>
+    ),
+  },
+);
 
 type Metadata = Record<string, never>;
 
@@ -16,7 +25,7 @@ export const sheetArtifact = new Artifact<"sheet", Metadata>({
   actions: [
     {
       description: "View Previous version",
-      icon: <UndoIcon size={18} />,
+      icon: <RotateCcw />,
       isDisabled: ({ currentVersionIndex }) => {
         if (currentVersionIndex === 0) {
           return true;
@@ -30,7 +39,7 @@ export const sheetArtifact = new Artifact<"sheet", Metadata>({
     },
     {
       description: "View Next version",
-      icon: <RedoIcon size={18} />,
+      icon: <RotateCw />,
       isDisabled: ({ isCurrentVersion }) => {
         if (isCurrentVersion) {
           return true;
@@ -44,12 +53,12 @@ export const sheetArtifact = new Artifact<"sheet", Metadata>({
     },
     {
       description: "Copy as .csv",
-      icon: <CopyIcon />,
+      icon: <Copy />,
       onClick: ({ content }) => {
         const parsed = parse<string[]>(content, { skipEmptyLines: true });
 
         const nonEmptyRows = parsed.data.filter((row) =>
-          row.some((cell) => cell.trim() !== "")
+          row.some((cell) => cell.trim() !== ""),
         );
 
         const cleanedCsv = unparse(nonEmptyRows);
@@ -84,7 +93,7 @@ export const sheetArtifact = new Artifact<"sheet", Metadata>({
   toolbar: [
     {
       description: "Format and clean data",
-      icon: <SparklesIcon />,
+      icon: <Sparkles />,
       onClick: ({ sendMessage }) => {
         sendMessage({
           parts: [
@@ -96,7 +105,7 @@ export const sheetArtifact = new Artifact<"sheet", Metadata>({
     },
     {
       description: "Analyze and visualize data",
-      icon: <LineChartIcon />,
+      icon: <ChartLine />,
       onClick: ({ sendMessage }) => {
         sendMessage({
           parts: [

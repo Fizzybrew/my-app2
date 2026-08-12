@@ -5,7 +5,6 @@ import { parse, unparse } from "papaparse";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import DataGrid, { textEditor } from "react-data-grid";
 import { cn } from "@/lib/utils";
-
 import "react-data-grid/lib/styles.css";
 
 type SheetEditorProps = {
@@ -85,7 +84,7 @@ const PureSpreadsheetEditor = ({ content, saveContent }: SheetEditorProps) => {
 
         return rowData;
       }),
-    [parseData, columns]
+    [parseData, columns],
   );
 
   const [localRows, setLocalRows] = useState(initialRows);
@@ -100,7 +99,7 @@ const PureSpreadsheetEditor = ({ content, saveContent }: SheetEditorProps) => {
     setLocalRows(newRows);
 
     const updatedData = newRows.map((row) =>
-      columns.slice(1).map((col) => String(row[col.key] ?? ""))
+      columns.slice(1).map((col) => String(row[col.key] ?? "")),
     );
 
     const newCsvContent = generateCsv(updatedData);
@@ -112,11 +111,9 @@ const PureSpreadsheetEditor = ({ content, saveContent }: SheetEditorProps) => {
       column: { key: string };
       selectCell: (enableEditor?: boolean) => void;
     }) => {
-      if (args.column.key !== "rowNumber") {
-        args.selectCell(true);
-      }
+      if (args.column.key !== "rowNumber") args.selectCell(true);
     },
-    []
+    [],
   );
 
   return (

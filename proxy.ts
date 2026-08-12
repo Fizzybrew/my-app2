@@ -13,10 +13,14 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  const secureCookie =
+    !isDevelopmentEnvironment &&
+    request.headers.get("x-forwarded-proto") === "https";
+
   const token = await getToken({
     req: request,
     secret: process.env.AUTH_SECRET,
-    secureCookie: !isDevelopmentEnvironment,
+    secureCookie,
   });
 
   const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -25,7 +29,7 @@ export async function proxy(request: NextRequest) {
     const redirectUrl = encodeURIComponent(new URL(request.url).pathname);
 
     return NextResponse.redirect(
-      new URL(`${base}/api/auth/guest?redirectUrl=${redirectUrl}`, request.url)
+      new URL(`${base}/api/auth/guest?redirectUrl=${redirectUrl}`, request.url),
     );
   }
 

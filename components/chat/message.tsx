@@ -1,6 +1,7 @@
 "use client";
+
 import type { UseChatHelpers } from "@ai-sdk/react";
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
 import { cn, sanitizeText } from "@/lib/utils";
@@ -15,22 +16,35 @@ import {
 } from "../ai-elements/tool";
 import { useDataStream } from "./data-stream-provider";
 import { DocumentToolResult } from "./document";
-import { DocumentPreview } from "./document-preview";
-import { SparklesIcon } from "./icons";
+const DocumentPreview = dynamic(
+  () => import("./document-preview").then((mod) => mod.DocumentPreview),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex size-full items-center justify-center p-8">
+        <Spinner className="size-6 text-muted-foreground" />
+      </div>
+    ),
+  },
+);
 import { MessageActions } from "./message-actions";
 import { MessageReasoning } from "./message-reasoning";
 import { PreviewAttachment } from "./preview-attachment";
 import { Weather } from "./weather";
+import { submitEditedMessage } from "./message-editor";
+import { Button } from "../ui/button";
+import dynamic from "next/dynamic";
+import { Spinner } from "../ui/spinner";
 
 function WaitingText() {
   const { waitingStatus } = useDataStream();
   const waitingText = waitingStatus?.message ?? "Waiting...";
 
   return (
-    <div className="flex min-h-[calc(13px*1.65)] min-w-0 items-center text-[13px] leading-[1.65]">
+    <div className="flex min-h-[21.45px] min-w-0 items-center text-[13px] leading-[1.65]">
       <Shimmer
         as="span"
-        className="font-medium whitespace-normal break-words"
+        className="font-medium whitespace-normal wrap-break-word"
         duration={1}
       >
         {waitingText}
@@ -66,14 +80,12 @@ function ToolApprovalActions({
       <button
         className="rounded-md px-3 py-1.5 text-muted-foreground text-sm transition-colors hover:bg-muted hover:text-foreground"
         onClick={handleDeny}
-        type="button"
       >
         Deny
       </button>
       <button
         className="rounded-md bg-primary px-3 py-1.5 text-primary-foreground text-sm transition-colors hover:bg-primary/90"
         onClick={handleAllow}
-        type="button"
       >
         Allow
       </button>
@@ -91,7 +103,6 @@ const PurePreviewMessage = ({
   regenerate: _regenerate,
   isReadonly,
   requiresScrollPadding: _requiresScrollPadding,
-  onEdit,
 }: {
   addToolApprovalResponse: UseChatHelpers<ChatMessage>["addToolApprovalResponse"];
   chatId: string;
@@ -102,10 +113,9 @@ const PurePreviewMessage = ({
   regenerate: UseChatHelpers<ChatMessage>["regenerate"];
   isReadonly: boolean;
   requiresScrollPadding: boolean;
-  onEdit?: (message: ChatMessage) => void;
 }) => {
   const attachmentsFromMessage = message.parts.filter(
-    (part) => part.type === "file"
+    (part) => part.type === "file",
   );
 
   useDataStream();
@@ -119,9 +129,51 @@ const PurePreviewMessage = ({
       (part.type === "reasoning" &&
         "text" in part &&
         part.text?.trim().length > 0) ||
-      part.type.startsWith("tool-")
+      part.type.startsWith("tool-"),
   );
   const isThinking = isAssistant && isLoading && !hasAnyContent;
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState("");
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const userText =
+    message.parts
+      ?.filter((p) => p.type === "text")
+      .map((p) => p.text)
+      .join("") ?? "";
+
+  const handleStartEdit = useCallback(() => {
+    setEditText(userText);
+    setIsEditing(true);
+  }, [userText]);
+
+  const handleSaveEdit = useCallback(async () => {
+    setIsEditing(false);
+    if (editText.trim() === "" || editText === userText) return;
+    await submitEditedMessage({
+      message,
+      regenerate: _regenerate,
+      setMessages: _setMessages,
+      text: editText,
+    });
+  }, [editText, message, _regenerate, _setMessages, userText]);
+
+  const handleCancelEdit = useCallback(() => {
+    setIsEditing(false);
+  }, []);
+
+  useEffect(() => {
+    if (isEditing && editTextareaRef.current) {
+      const textarea = editTextareaRef.current;
+      const timer = setTimeout(() => {
+        textarea.focus();
+        const len = textarea.value.length;
+        textarea.setSelectionRange(len, len);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [isEditing]);
 
   const attachments = attachmentsFromMessage.length > 0 && (
     <div
@@ -152,7 +204,7 @@ const PurePreviewMessage = ({
       }
       return acc;
     },
-    { isStreaming: false, rendered: false, text: "" }
+    { isStreaming: false, rendered: false, text: "" },
   ) ?? { isStreaming: false, rendered: false, text: "" };
 
   const parts = message.parts?.map((part, index) => {
@@ -176,8 +228,8 @@ const PurePreviewMessage = ({
     if (type === "text") {
       return (
         <MessageContent
-          className={cn("text-[13px] leading-[1.65]", {
-            "w-fit max-w-[min(80%,56ch)] overflow-hidden break-words rounded-2xl rounded-br-lg border border-border/30 bg-gradient-to-br from-secondary to-muted px-3.5 py-2 shadow-[var(--shadow-card)]":
+          className={cn("", {
+            "w-fit max-w-[min(80%,56ch)] overflow-hidden wrap-break-word rounded-3xl border border-border/30 bg-secondary px-3.5 py-2":
               message.role === "user",
           })}
           data-testid="message-content"
@@ -196,7 +248,7 @@ const PurePreviewMessage = ({
         (state === "approval-responded" &&
           (part as { approval?: { approved?: boolean } }).approval?.approved ===
             false);
-      const widthClass = "w-[min(100%,450px)]";
+      const widthClass = "w-full";
 
       if (state === "output-available") {
         return (
@@ -307,11 +359,7 @@ const PurePreviewMessage = ({
       const { toolCallId, state } = part;
 
       return (
-        <Tool
-          className="w-[min(100%,450px)]"
-          defaultOpen={true}
-          key={toolCallId}
-        >
+        <Tool className="w-full" defaultOpen={true} key={toolCallId}>
           <ToolHeader state={state} type="tool-requestSuggestions" />
           <ToolContent>
             {state === "input-available" && <ToolInput input={part.input} />}
@@ -347,13 +395,42 @@ const PurePreviewMessage = ({
       isLoading={isLoading}
       key={`action-${message.id}`}
       message={message}
-      onEdit={onEdit ? () => onEdit(message) : undefined}
+      onEdit={isUser ? handleStartEdit : undefined}
+      onRegenerate={
+        isAssistant ? () => _regenerate({ messageId: message.id }) : undefined
+      }
       vote={vote}
     />
   );
 
   const content = isThinking ? (
     <WaitingText />
+  ) : isUser ? (
+    isEditing ? (
+      <div className="lg:pl-2 size-full">
+        <div className="flex w-full flex-col gap-1.5 rounded-3xl border border-border/30 bg-secondary px-3.5 py-2">
+          <textarea
+            ref={editTextareaRef}
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            className="min-h-20 w-full resize-none bg-transparent placeholder:text-muted-foreground focus:outline-none"
+            placeholder="Edit your message..."
+          />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button onClick={handleCancelEdit} variant="outline">
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit}>Send</Button>
+          </div>
+        </div>
+      </div>
+    ) : (
+      <>
+        {attachments}
+        {parts}
+        {actions}
+      </>
+    )
   ) : (
     <>
       {attachments}
@@ -364,25 +441,19 @@ const PurePreviewMessage = ({
 
   return (
     <div
+      id={message.id}
       className={cn(
-        "group/message w-full",
-        !isAssistant && "animate-[fade-up_0.25s_cubic-bezier(0.22,1,0.36,1)]"
+        "group/message w-full transition-colors duration-500 [&.highlight-message]:ring-2 [&.highlight-message]:ring-primary [&.highlight-message]:bg-primary/5 [&.highlight-message]:rounded-xl",
+        !isAssistant && "animate-[fade-up_0.25s_cubic-bezier(0.22,1,0.36,1)]",
       )}
       data-role={message.role}
       data-testid={`message-${message.role}`}
     >
       <div
         className={cn(
-          isUser ? "flex flex-col items-end gap-2" : "flex items-start gap-3"
+          isUser ? "flex flex-col items-end gap-2" : "flex items-start gap-3",
         )}
       >
-        {isAssistant && (
-          <div className="flex h-[calc(13px*1.65)] shrink-0 items-center">
-            <div className="flex size-7 items-center justify-center rounded-lg bg-muted/60 text-muted-foreground ring-1 ring-border/50">
-              <SparklesIcon size={13} />
-            </div>
-          </div>
-        )}
         {isAssistant ? (
           <div className="flex min-w-0 flex-1 flex-col gap-2">{content}</div>
         ) : (
@@ -402,12 +473,6 @@ export const ThinkingMessage = () => (
     data-testid="message-assistant-loading"
   >
     <div className="flex items-start gap-3">
-      <div className="flex h-[calc(13px*1.65)] shrink-0 items-center">
-        <div className="flex size-7 items-center justify-center rounded-lg bg-muted/60 text-muted-foreground ring-1 ring-border/50">
-          <SparklesIcon size={13} />
-        </div>
-      </div>
-
       <WaitingText />
     </div>
   </div>

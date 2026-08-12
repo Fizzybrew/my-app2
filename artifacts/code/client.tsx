@@ -1,21 +1,51 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { CodeEditor } from "@/components/chat/code-editor";
+import dynamic from "next/dynamic";
+import { Spinner } from "@/components/ui/spinner";
+
+const CodeEditor = dynamic(
+  () => import("@/components/chat/code-editor").then((mod) => mod.CodeEditor),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex size-full items-center justify-center">
+        <Spinner />
+      </div>
+    ),
+  },
+);
+
+const Console = dynamic(
+  () => import("@/components/chat/console").then((mod) => mod.Console),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex size-full items-center justify-center">
+        <Spinner />
+      </div>
+    ),
+  },
+);
+
 import {
-  Console,
   type ConsoleOutput,
   type ConsoleOutputContent,
 } from "@/components/chat/console";
 import { Artifact } from "@/components/chat/create-artifact";
-import {
-  CopyIcon,
-  LogsIcon,
-  MessageIcon,
-  PlayIcon,
-  RedoIcon,
-  UndoIcon,
-} from "@/components/chat/icons";
 import { generateUUID } from "@/lib/utils";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import {
+  Copy,
+  Logs,
+  MessageCircle,
+  Play,
+  RotateCcw,
+  RotateCw,
+} from "lucide-react";
 
 const OUTPUT_HANDLERS = {
   basic: `
@@ -69,6 +99,8 @@ type Metadata = {
 
 const codeArtifactContent: Artifact<"code", Metadata>["content"] =
   function CodeArtifactContent({ metadata, setMetadata, ...props }) {
+    const [isConsoleOpen, setIsConsoleOpen] = useState(false);
+
     const clearConsoleOutputs = useCallback(() => {
       setMetadata((currentMetadata) => ({
         ...currentMetadata,
@@ -76,19 +108,41 @@ const codeArtifactContent: Artifact<"code", Metadata>["content"] =
       }));
     }, [setMetadata]);
 
-    return (
-      <>
-        <div className="relative min-h-[200px]">
-          <CodeEditor {...props} />
-        </div>
+    const handleCloseConsole = useCallback(() => {
+      setIsConsoleOpen(false);
+    }, []);
 
-        {metadata?.outputs ? (
-          <Console
-            consoleOutputs={metadata.outputs}
-            setConsoleOutputs={clearConsoleOutputs}
-          />
-        ) : null}
-      </>
+    useEffect(() => {
+      if (metadata?.outputs && metadata.outputs.length > 0) {
+        setIsConsoleOpen(true);
+      }
+    }, [metadata?.outputs, setIsConsoleOpen]);
+
+    return (
+      <div className="flex size-full flex-col">
+        <ResizablePanelGroup orientation="vertical" className="h-full">
+          <ResizablePanel defaultSize={50} className="relative">
+            <div className="absolute inset-0">
+              <CodeEditor {...props} />
+            </div>
+          </ResizablePanel>
+
+          {isConsoleOpen && (
+            <>
+              <ResizableHandle />
+              <ResizablePanel defaultSize={50} minSize={48}>
+                {metadata?.outputs ? (
+                  <Console
+                    consoleOutputs={metadata.outputs}
+                    setConsoleOutputs={clearConsoleOutputs}
+                    onClose={handleCloseConsole}
+                  />
+                ) : null}
+              </ResizablePanel>
+            </>
+          )}
+        </ResizablePanelGroup>
+      </div>
     );
   };
 
@@ -96,7 +150,7 @@ export const codeArtifact = new Artifact<"code", Metadata>({
   actions: [
     {
       description: "Execute code",
-      icon: <PlayIcon size={18} />,
+      icon: <Play fill="currentColor" />,
       label: "Run",
       onClick: async ({ content, setMetadata }) => {
         const runId = generateUUID();
@@ -157,16 +211,16 @@ export const codeArtifact = new Artifact<"code", Metadata>({
               }
 
               await currentPyodideInstance.runPythonAsync(
-                OUTPUT_HANDLERS[handler as keyof typeof OUTPUT_HANDLERS]
+                OUTPUT_HANDLERS[handler as keyof typeof OUTPUT_HANDLERS],
               );
 
               if (handler === "matplotlib") {
                 await currentPyodideInstance.runPythonAsync(
-                  "setup_matplotlib_output()"
+                  "setup_matplotlib_output()",
                 );
               }
             },
-            Promise.resolve()
+            Promise.resolve(),
           );
 
           await currentPyodideInstance.runPythonAsync(content);
@@ -205,7 +259,7 @@ export const codeArtifact = new Artifact<"code", Metadata>({
     },
     {
       description: "View Previous version",
-      icon: <UndoIcon size={18} />,
+      icon: <RotateCcw />,
       isDisabled: ({ currentVersionIndex }) => {
         if (currentVersionIndex === 0) {
           return true;
@@ -219,7 +273,7 @@ export const codeArtifact = new Artifact<"code", Metadata>({
     },
     {
       description: "View Next version",
-      icon: <RedoIcon size={18} />,
+      icon: <RotateCw />,
       isDisabled: ({ isCurrentVersion }) => {
         if (isCurrentVersion) {
           return true;
@@ -233,7 +287,7 @@ export const codeArtifact = new Artifact<"code", Metadata>({
     },
     {
       description: "Copy code to clipboard",
-      icon: <CopyIcon size={18} />,
+      icon: <Copy />,
       onClick: ({ content }) => {
         navigator.clipboard.writeText(content);
         toast.success("Copied to clipboard!");
@@ -267,7 +321,7 @@ export const codeArtifact = new Artifact<"code", Metadata>({
   toolbar: [
     {
       description: "Add comments",
-      icon: <MessageIcon />,
+      icon: <MessageCircle />,
       onClick: ({ sendMessage }) => {
         sendMessage({
           parts: [
@@ -282,7 +336,7 @@ export const codeArtifact = new Artifact<"code", Metadata>({
     },
     {
       description: "Add logs",
-      icon: <LogsIcon />,
+      icon: <Logs />,
       onClick: ({ sendMessage }) => {
         sendMessage({
           parts: [

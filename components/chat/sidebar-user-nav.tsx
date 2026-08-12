@@ -1,16 +1,15 @@
 "use client";
 
-import { ChevronUp } from "lucide-react";
+import { Ellipsis, LogIn, LogOut, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { User } from "next-auth";
 import { signOut, useSession } from "next-auth/react";
-import { useTheme } from "next-themes";
 import { useCallback } from "react";
+import { useTheme } from "next-themes";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -19,16 +18,8 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { guestRegex } from "@/lib/constants";
-import { LoaderIcon } from "./icons";
-import { toast } from "./toast";
-
-function emailToHue(email: string): number {
-  let hash = 0;
-  for (const char of email) {
-    hash = char.charCodeAt(0) + ((hash << 5) - hash);
-  }
-  return Math.abs(hash) % 360;
-}
+import { toast } from "sonner";
+import { Skeleton } from "../ui/skeleton";
 
 export function SidebarUserNav({ user }: { user: User }) {
   const router = useRouter();
@@ -36,26 +27,20 @@ export function SidebarUserNav({ user }: { user: User }) {
   const { setTheme, resolvedTheme } = useTheme();
 
   const isGuest = guestRegex.test(data?.user?.email ?? "");
+
   const handleThemeSelect = useCallback(() => {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
   }, [resolvedTheme, setTheme]);
 
   const handleAuthClick = useCallback(() => {
     if (status === "loading") {
-      toast({
-        description: "Checking authentication status, please try again!",
-        type: "error",
-      });
-
+      toast.error("Checking authentication status, please try again!");
       return;
     }
-
     if (isGuest) {
       router.push("/login");
     } else {
-      signOut({
-        redirectTo: "/",
-      });
+      signOut({ redirectTo: "/" });
     }
   }, [isGuest, router, status]);
 
@@ -65,40 +50,30 @@ export function SidebarUserNav({ user }: { user: User }) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             {status === "loading" ? (
-              <SidebarMenuButton className="h-10 justify-between rounded-lg bg-transparent text-sidebar-foreground/50 transition-colors duration-150 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
+              <SidebarMenuButton className="h-18 justify-between rounded-lg bg-transparent text-sidebar-foreground/50 transition-colors duration-150 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
                 <div className="flex flex-row items-center gap-2">
-                  <div className="size-6 animate-pulse rounded-full bg-sidebar-foreground/10" />
-                  <span className="animate-pulse rounded-md bg-sidebar-foreground/10 text-transparent text-[13px]">
-                    Loading...
-                  </span>
-                </div>
-                <div className="animate-spin text-sidebar-foreground/50">
-                  <LoaderIcon />
+                  <Skeleton className="size-6 rounded-full" />
+                  <Skeleton className="h-4 w-24 rounded-md" />
                 </div>
               </SidebarMenuButton>
             ) : (
               <SidebarMenuButton
-                className="h-8 px-2 rounded-lg bg-transparent text-sidebar-foreground/70 transition-colors duration-150 hover:text-sidebar-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                className="h-8 px-2"
                 data-testid="user-nav-button"
               >
-                <div
-                  className="size-5 shrink-0 rounded-full ring-1 ring-sidebar-border/50"
-                  style={{
-                    background: `linear-gradient(135deg, oklch(0.35 0.08 ${emailToHue(user.email ?? "")}), oklch(0.25 0.05 ${emailToHue(user.email ?? "") + 40}))`,
-                  }}
-                />
-                <span className="truncate text-[13px]" data-testid="user-email">
+                <div className="size-5 shrink-0 rounded-full bg-primary" />
+                <span className="truncate text-sm" data-testid="user-email">
                   {isGuest ? "Guest" : user?.email}
                 </span>
-                <ChevronUp className="ml-auto size-3.5 text-sidebar-foreground/50" />
+                <Ellipsis className="ml-auto" />
               </SidebarMenuButton>
             )}
           </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="w-(--radix-popper-anchor-width) rounded-lg border border-border/60 bg-card/95 backdrop-blur-xl shadow-[var(--shadow-float)]"
-            data-testid="user-nav-menu"
-            side="top"
-          >
+          <DropdownMenuContent data-testid="user-nav-menu" side="top">
+            <DropdownMenuItem>
+              <Settings />
+              <span>Settings</span>
+            </DropdownMenuItem>
             <DropdownMenuItem
               className="cursor-pointer text-[13px]"
               data-testid="user-nav-item-theme"
@@ -106,15 +81,21 @@ export function SidebarUserNav({ user }: { user: User }) {
             >
               {`Toggle ${resolvedTheme === "light" ? "dark" : "light"} mode`}
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild data-testid="user-nav-item-auth">
-              <button
-                className="w-full cursor-pointer text-[13px]"
-                onClick={handleAuthClick}
-                type="button"
-              >
-                {isGuest ? "Login to your account" : "Sign out"}
-              </button>
+            <DropdownMenuItem
+              data-testid="user-nav-item-auth"
+              onClick={handleAuthClick}
+            >
+              {isGuest ? (
+                <>
+                  <LogIn />
+                  <span>Sign in</span>
+                </>
+              ) : (
+                <>
+                  <LogOut />
+                  <span>Sign out</span>
+                </>
+              )}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

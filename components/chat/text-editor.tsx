@@ -6,7 +6,6 @@ import { EditorState } from "prosemirror-state";
 import { type Decoration, DecorationSet, EditorView } from "prosemirror-view";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-
 import type { Suggestion } from "@/lib/db/schema";
 import {
   documentSchema,
@@ -47,7 +46,7 @@ function PureEditor({
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<EditorView | null>(null);
   const [activeSuggestion, setActiveSuggestion] = useState<UISuggestion | null>(
-    null
+    null,
   );
   const suggestionsRef = useRef<UISuggestion[]>([]);
 
@@ -79,9 +78,7 @@ function PureEditor({
             if (highlight) {
               const id = highlight.getAttribute("data-suggestion-id");
               const found = suggestionsRef.current.find((s) => s.id === id);
-              if (found) {
-                setActiveSuggestion(found);
-              }
+              if (found) setActiveSuggestion(found);
               return true;
             }
             return false;
@@ -116,7 +113,7 @@ function PureEditor({
   useEffect(() => {
     if (editorRef.current && content) {
       const currentContent = buildContentFromDocument(
-        editorRef.current.state.doc
+        editorRef.current.state.doc,
       );
 
       if (status === "streaming") {
@@ -125,7 +122,7 @@ function PureEditor({
         const transaction = editorRef.current.state.tr.replaceWith(
           0,
           editorRef.current.state.doc.content.size,
-          newDocument.content
+          newDocument.content,
         );
 
         transaction.setMeta("no-save", true);
@@ -139,7 +136,7 @@ function PureEditor({
         const transaction = editorRef.current.state.tr.replaceWith(
           0,
           editorRef.current.state.doc.content.size,
-          newDocument.content
+          newDocument.content,
         );
 
         transaction.setMeta("no-save", true);
@@ -152,16 +149,16 @@ function PureEditor({
     if (editorRef.current?.state.doc && content) {
       const projectedSuggestions = projectWithPositions(
         editorRef.current.state.doc,
-        suggestions
+        suggestions,
       ).filter(
-        (suggestion) => suggestion.selectionStart && suggestion.selectionEnd
+        (suggestion) => suggestion.selectionStart && suggestion.selectionEnd,
       );
 
       suggestionsRef.current = projectedSuggestions;
 
       const decorations = createDecorations(
         projectedSuggestions,
-        editorRef.current
+        editorRef.current,
       );
 
       const transaction = editorRef.current.state.tr;
@@ -171,9 +168,7 @@ function PureEditor({
   }, [suggestions, content]);
 
   const handleApply = useCallback(() => {
-    if (!editorRef.current || !activeSuggestion) {
-      return;
-    }
+    if (!editorRef.current || !activeSuggestion) return;
 
     const { state, dispatch } = editorRef.current;
     const currentState = suggestionsPluginKey.getState(state);
@@ -186,8 +181,8 @@ function PureEditor({
           .find()
           .filter(
             (decoration: Decoration) =>
-              decoration.spec.suggestionId !== activeSuggestion.id
-          )
+              decoration.spec.suggestionId !== activeSuggestion.id,
+          ),
       );
 
       const decorationTransaction = state.tr;
@@ -201,7 +196,7 @@ function PureEditor({
     const textTransaction = editorRef.current.state.tr.replaceWith(
       activeSuggestion.selectionStart,
       activeSuggestion.selectionEnd,
-      state.schema.text(activeSuggestion.suggestedText)
+      state.schema.text(activeSuggestion.suggestedText),
     );
     textTransaction.setMeta("no-debounce", true);
     dispatch(textTransaction);
@@ -228,8 +223,8 @@ function PureEditor({
             suggestion={activeSuggestion}
           />,
           containerRef.current.closest(
-            "[data-slot='artifact-content']"
-          ) as HTMLElement
+            "[data-slot='artifact-content']",
+          ) as HTMLElement,
         )}
     </>
   );
