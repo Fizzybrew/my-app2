@@ -17,7 +17,6 @@ import {
   useRef,
   useState,
 } from "react";
-import useSWR from "swr";
 import { useLocalStorage, useWindowSize } from "usehooks-ts";
 import {
   ModelSelector,
@@ -80,7 +79,12 @@ type MultimodalInputProps = {
   className?: string;
   selectedModelId: string;
   currentModelName: string;
-  onModelChange?: (model: { id: string; name: string }) => void;
+  currentModelCapabilities: ModelCapabilities;
+  onModelChange?: (model: {
+    id: string;
+    name: string;
+    capabilities: ModelCapabilities;
+  }) => void;
   isLoading?: boolean;
 };
 
@@ -98,6 +102,7 @@ function PureMultimodalInput({
   className,
   selectedModelId,
   currentModelName,
+  currentModelCapabilities,
   onModelChange,
   isLoading,
 }: MultimodalInputProps) {
@@ -458,8 +463,8 @@ function PureMultimodalInput({
         <PromptInputFooter>
           <PromptInputTools>
             <AttachmentsButton
+              capabilities={currentModelCapabilities}
               fileInputRef={fileInputRef}
-              selectedModelId={selectedModelId}
               status={status}
             />
 
@@ -555,24 +560,15 @@ function AttachmentPreviewItem({
 }
 
 function AttachmentsButton({
+  capabilities,
   fileInputRef,
-  selectedModelId,
   status,
 }: {
+  capabilities: ModelCapabilities;
   fileInputRef: React.MutableRefObject<HTMLInputElement | null>;
-  selectedModelId: string;
   status: UseChatHelpers<ChatMessage>["status"];
 }) {
-  const { data } = useSWR<{
-    capabilities: Record<string, ModelCapabilities>;
-  }>(
-    `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/models`,
-    (url: string) => fetch(url).then((response) => response.json()),
-    { dedupingInterval: 3_600_000, revalidateOnFocus: false },
-  );
-
-  const hasVision = data?.capabilities?.[selectedModelId]?.vision ?? false;
-  const disabled = status !== "ready" || !hasVision;
+  const disabled = status !== "ready" || !capabilities.vision;
 
   const button = (
     <Button
