@@ -1,11 +1,10 @@
 "use client";
 
-import { getSession } from "next-auth/react";
 import type { User } from "next-auth";
 import { Ghost, PanelLeftIcon, PenSquareIcon, TrashIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
 import {
@@ -37,30 +36,11 @@ import {
   AlertDialogTitle,
 } from "../ui/alert-dialog";
 
-export function AppSidebar({ user: initialUser }: { user?: User }) {
+export function AppSidebar({ user }: { user: User | undefined }) {
   const router = useRouter();
   const { setOpenMobile, toggleSidebar } = useSidebar();
   const { mutate } = useSWRConfig();
-  const [user, setUser] = useState<User | undefined>(initialUser);
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
-
-  useEffect(() => {
-    if (initialUser) return;
-
-    let active = true;
-
-    getSession()
-      .then((session) => {
-        if (active) setUser(session?.user);
-      })
-      .catch(() => {
-        if (active) setUser(undefined);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [initialUser]);
 
   const closeMobile = useCallback(() => {
     setOpenMobile(false);
