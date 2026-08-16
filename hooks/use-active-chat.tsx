@@ -41,7 +41,8 @@ type ActiveChatContextValue = {
   isLoading: boolean;
   votes: Vote[] | undefined;
   currentModelId: string;
-  setCurrentModelId: (id: string) => void;
+  currentModelName: string;
+  setCurrentModel: (model: { id: string; name: string }) => void;
 };
 
 const ActiveChatContext = createContext<ActiveChatContextValue | null>(null);
@@ -54,9 +55,11 @@ function extractChatId(pathname: string): string | null {
 export function ActiveChatProvider({
   children,
   initialModelId = DEFAULT_CHAT_MODEL,
+  initialModelName = "DeepSeek V4 Flash",
 }: {
   children: ReactNode;
   initialModelId?: string;
+  initialModelName?: string;
 }) {
   const pathname = usePathname();
   const { setDataStream, setWaitingStatus } = useDataStream();
@@ -74,16 +77,19 @@ export function ActiveChatProvider({
 
   const chatId = chatIdFromUrl ?? newChatIdRef.current;
 
-  const [currentModelId, setCurrentModelId] = useState(initialModelId);
-  const currentModelIdRef = useRef(initialModelId);
+  const [currentModel, setCurrentModelState] = useState({
+    id: initialModelId,
+    name: initialModelName,
+  });
+  const currentModelRef = useRef(currentModel);
 
   useEffect(() => {
-    currentModelIdRef.current = currentModelId;
-  }, [currentModelId]);
+    currentModelRef.current = currentModel;
+  }, [currentModel]);
 
-  const selectModel = (modelId: string) => {
-    currentModelIdRef.current = modelId;
-    setCurrentModelId(modelId);
+  const selectModel = (model: { id: string; name: string }) => {
+    currentModelRef.current = model;
+    setCurrentModelState(model);
   };
 
   const [input, setInput] = useState("");
@@ -167,7 +173,7 @@ export function ActiveChatProvider({
             ...(isToolApprovalContinuation
               ? { messages: request.messages }
               : { message: lastMessage }),
-            selectedChatModel: currentModelIdRef.current,
+            selectedChatModel: currentModelRef.current.id,
             ...request.body,
           },
         };
@@ -246,14 +252,15 @@ export function ActiveChatProvider({
     () => ({
       addToolApprovalResponse,
       chatId,
-      currentModelId,
+      currentModelId: currentModel.id,
+      currentModelName: currentModel.name,
       input,
       isLoading: !isNewChat && isLoading,
       isReadonly,
       messages,
       regenerate,
       sendMessage,
-      setCurrentModelId: selectModel,
+      setCurrentModel: selectModel,
       setInput,
       setMessages,
       status,
@@ -274,7 +281,7 @@ export function ActiveChatProvider({
       isNewChat,
       isLoading,
       votes,
-      currentModelId,
+      currentModel,
     ],
   );
 
