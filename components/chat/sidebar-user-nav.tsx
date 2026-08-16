@@ -11,13 +11,23 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar";
+import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toast";
 import { guestRegex } from "@/lib/constants";
+
+function SidebarUserNavSkeleton() {
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton disabled aria-hidden="true">
+          <Skeleton className="size-4 rounded-md" />
+          <Skeleton className="h-4 w-24" />
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  );
+}
 
 export function SidebarUserNav({ user }: { user: User }) {
   const router = useRouter();
@@ -40,22 +50,22 @@ export function SidebarUserNav({ user }: { user: User }) {
     }
   }, [isGuest, router, status]);
 
+  if (status === "loading") {
+    return <SidebarUserNavSkeleton />;
+  }
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              status === "loading" ? (
-                <SidebarMenuButton />
-              ) : (
-                <SidebarMenuButton data-testid="user-nav-button">
-                  <UserRound />
-                  <span data-testid="user-email">
-                    {isGuest ? "Guest" : user?.email}
-                  </span>
-                </SidebarMenuButton>
-              )
+              <SidebarMenuButton data-testid="user-nav-button">
+                <UserRound />
+                <span data-testid="user-email">
+                  {isGuest ? "Guest" : user?.email}
+                </span>
+              </SidebarMenuButton>
             }
           />
           <DropdownMenuContent data-testid="user-nav-menu" side="top">
