@@ -52,6 +52,27 @@ function extractChatId(pathname: string): string | null {
   return match ? match[1] : null;
 }
 
+function getStoredModelId() {
+  if (typeof document === "undefined") {
+    return DEFAULT_CHAT_MODEL;
+  }
+
+  const cookieModel = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("chat-model="))
+    ?.split("=")[1];
+
+  if (!cookieModel) {
+    return DEFAULT_CHAT_MODEL;
+  }
+
+  try {
+    return decodeURIComponent(cookieModel);
+  } catch {
+    return DEFAULT_CHAT_MODEL;
+  }
+}
+
 export function ActiveChatProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { setDataStream, setWaitingStatus } = useDataStream();
@@ -71,9 +92,21 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
 
   const [currentModelId, setCurrentModelId] = useState(DEFAULT_CHAT_MODEL);
   const currentModelIdRef = useRef(currentModelId);
+
+  useEffect(() => {
+    const storedModelId = getStoredModelId();
+    setCurrentModelId(storedModelId);
+    currentModelIdRef.current = storedModelId;
+  }, []);
+
   useEffect(() => {
     currentModelIdRef.current = currentModelId;
   }, [currentModelId]);
+
+  const handleModelChange = (modelId: string) => {
+    setCurrentModelId(modelId);
+    currentModelIdRef.current = modelId;
+  };
 
   const [input, setInput] = useState("");
 
@@ -82,7 +115,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       ? null
       : `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/messages?chatId=${chatId}`,
     fetcher,
-    { revalidateOnFocus: false }
+    { revalidateOnFocus: false },
   );
 
   const initialMessages: ChatMessage[] = isNewChat
@@ -130,7 +163,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
             "state" in part &&
             part.state === "approval-responded" &&
             "approval" in part &&
-            (part.approval as { approved?: boolean })?.approved === true
+            (part.approval as { approved?: boolean })?.approved === true,
         ) ?? false
       );
     },
@@ -147,7 +180,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
               return (
                 state === "approval-responded" || state === "output-denied"
               );
-            })
+            }),
           );
 
         return {
@@ -196,18 +229,6 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     }
   }, [chatId, isNewChat, setMessages]);
 
-  useEffect(() => {
-    if (chatData && !isNewChat) {
-      const cookieModel = document.cookie
-        .split("; ")
-        .find((row) => row.startsWith("chat-model="))
-        ?.split("=")[1];
-      if (cookieModel) {
-        setCurrentModelId(decodeURIComponent(cookieModel));
-      }
-    }
-  }, [chatData, isNewChat]);
-
   const hasAppendedQueryRef = useRef(false);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -217,7 +238,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       window.history.replaceState(
         {},
         "",
-        `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/chat/${chatId}`
+        `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/chat/${chatId}`,
       );
       sendMessage({
         parts: [{ text: query, type: "text" }],
@@ -240,7 +261,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       ? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/vote?chatId=${chatId}`
       : null,
     fetcher,
-    { revalidateOnFocus: false }
+    { revalidateOnFocus: false },
   );
 
   const value = useMemo<ActiveChatContextValue>(
@@ -254,7 +275,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       messages,
       regenerate,
       sendMessage,
-      setCurrentModelId,
+      setCurrentModelId: handleModelChange,
       setInput,
       setMessages,
       status,
@@ -276,7 +297,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       isLoading,
       votes,
       currentModelId,
-    ]
+    ],
   );
 
   return (
