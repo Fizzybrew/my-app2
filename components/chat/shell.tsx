@@ -31,7 +31,8 @@ export function ChatShell() {
     isLoading,
     votes,
     currentModelId,
-    setCurrentModelId,
+    currentModelName,
+    setCurrentModel,
   } = useActiveChat();
 
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -75,14 +76,15 @@ export function ChatShell() {
             votes={votes}
           />
           {!isReadonly && (
-            <div className="absolute bottom-6 left-0 right-0 z-10 px-4 max-w-3xl mx-auto">
+            <div className="absolute bottom-6 left-0 right-0 z-10 mx-auto max-w-3xl px-4">
               <MultimodalInput
                 attachments={attachments}
                 chatId={chatId}
+                currentModelName={currentModelName}
                 input={input}
                 isLoading={isLoading}
                 messages={messages}
-                onModelChange={setCurrentModelId}
+                onModelChange={setCurrentModel}
                 selectedModelId={currentModelId}
                 sendMessage={sendMessage}
                 setAttachments={setAttachments}
