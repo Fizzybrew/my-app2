@@ -36,8 +36,8 @@ import {
   PromptInputTools,
 } from "../ai-elements/prompt-input";
 import { Button } from "../ui/button";
-import { Spinner } from "../ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { ModelSelectorDropdown } from "./model-selector-dropdown";
 import { PreviewAttachment } from "./preview-attachment";
 import {
   type SlashCommand,
@@ -48,21 +48,6 @@ import {
 const SuggestedActions = dynamic(
   () => import("./suggested-actions").then((mod) => mod.SuggestedActions),
   { ssr: true },
-);
-
-const ModelSelectorDropdown = dynamic(
-  () =>
-    import("./model-selector-dropdown").then(
-      (mod) => mod.ModelSelectorDropdown,
-    ),
-  {
-    loading: () => (
-      <div className="flex items-center justify-center p-2">
-        <Spinner className="size-4 text-muted-foreground" />
-      </div>
-    ),
-    ssr: false,
-  },
 );
 
 type MultimodalInputProps = {
