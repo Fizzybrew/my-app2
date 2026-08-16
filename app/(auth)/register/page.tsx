@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import { useActionState, useEffect, useState } from "react";
 import { AuthForm } from "@/components/chat/auth-form";
 import { SubmitButton } from "@/components/chat/submit-button";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { type RegisterActionState, register } from "../actions";
 
 export default function Page() {
@@ -24,13 +24,16 @@ export default function Page() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: router and updateSession are stable refs
   useEffect(() => {
     if (state.status === "user_exists") {
-      toast.error("Account already exists!");
+      toast.add({ type: "error", description: "Account already exists!" });
     } else if (state.status === "failed") {
-      toast.error("Failed to create account!");
+      toast.add({ type: "error", description: "Failed to create account!" });
     } else if (state.status === "invalid_data") {
-      toast.error("Failed validating your submission!");
+      toast.add({
+        type: "error",
+        description: "Failed validating your submission!",
+      });
     } else if (state.status === "success") {
-      toast.success("Account created!");
+      toast.add({ type: "success", description: "Account created!" });
       setIsSuccessful(true);
       updateSession();
       router.refresh();
@@ -44,9 +47,7 @@ export default function Page() {
 
   return (
     <>
-      <h1 className="text-3xl font-semibold tracking-tight text-center mb-4">
-        Sign Up
-      </h1>
+      <h1 className="text-3xl font-semibold text-center">Sign Up</h1>
       <AuthForm action={handleSubmit} defaultEmail={email}>
         <SubmitButton isSuccessful={isSuccessful}>Sign up</SubmitButton>
         <p className="text-center text-sm text-muted-foreground">

@@ -8,7 +8,7 @@ export function ChatHeader({ className }: { className?: string }) {
   return (
     <header
       className={cn(
-        "px-4 py-2 flex items-center justify-between pointer-events-none bg-linear-to-t from-transparent to-background/50",
+        "absolute top-0 right-0 left-0 z-10 px-4 py-2 flex items-center justify-between pointer-events-none",
         className,
       )}
     >
@@ -19,17 +19,18 @@ export function ChatHeader({ className }: { className?: string }) {
 
       <Button
         className="pointer-events-auto ml-auto"
-        asChild
         aria-label="Upgrade"
+        nativeButton={false}
+        render={
+          <Link
+            href="/сделать ссылку на страничку с ценами"
+            rel="noopener noreferrer"
+            target="_blank"
+          />
+        }
       >
-        <Link
-          href="/сделать ссылку на страничку с ценами"
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          <Astroid fill="currentColor" />
-          Upgrade
-        </Link>
+        <Astroid fill="currentColor" />
+        Upgrade
       </Button>
     </header>
   );

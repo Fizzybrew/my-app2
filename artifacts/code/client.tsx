@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import dynamic from "next/dynamic";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -290,7 +290,7 @@ export const codeArtifact = new Artifact<"code", Metadata>({
       icon: <Copy />,
       onClick: ({ content }) => {
         navigator.clipboard.writeText(content);
-        toast.success("Copied to clipboard!");
+        toast.add({ type: "success", description: "Copied to clipboard!" });
       },
     },
   ],

@@ -4,10 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useActionState, useEffect, useState } from "react";
-
 import { AuthForm } from "@/components/chat/auth-form";
 import { SubmitButton } from "@/components/chat/submit-button";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { type LoginActionState, login } from "../actions";
 
 export default function Page() {
@@ -25,9 +24,12 @@ export default function Page() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: router and updateSession are stable refs
   useEffect(() => {
     if (state.status === "failed") {
-      toast.error("Invalid credentials!");
+      toast.add({ type: "error", description: "Invalid credentials!" });
     } else if (state.status === "invalid_data") {
-      toast.error("Failed validating your submission!");
+      toast.add({
+        type: "error",
+        description: "Failed validating your submission!",
+      });
     } else if (state.status === "success") {
       setIsSuccessful(true);
       updateSession();
@@ -42,9 +44,7 @@ export default function Page() {
 
   return (
     <>
-      <h1 className="text-3xl font-semibold tracking-tight mb-4 text-center">
-        Sign In
-      </h1>
+      <h1 className="text-3xl font-semibold text-center">Sign In</h1>
       <AuthForm action={handleSubmit} defaultEmail={email}>
         <SubmitButton isSuccessful={isSuccessful}>Sign in</SubmitButton>
         <p className="text-center text-sm text-muted-foreground">

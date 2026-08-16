@@ -155,16 +155,18 @@ export const TerminalCopyButton = ({
 
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          onClick={copyToClipboard}
-          size="icon-sm"
-          variant="ghost"
-          aria-label="Copy terminal output"
-          {...props}
-        >
-          {children ?? <Icon size={14} />}
-        </Button>
+      <TooltipTrigger
+        render={
+          <Button
+            onClick={copyToClipboard}
+            size="icon-sm"
+            variant="ghost"
+            aria-label="Copy terminal output"
+            {...props}
+          />
+        }
+      >
+        {children ?? <Icon size={14} />}
       </TooltipTrigger>
       <TooltipContent side="bottom">Copy</TooltipContent>
     </Tooltip>
@@ -201,17 +203,19 @@ export const TerminalClearButton = ({
         </Button>
       ) : (
         <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              onClick={onClear}
-              size="icon-sm"
-              variant="ghost"
-              disabled={isDisabled}
-              aria-label="Clear terminal output"
-              {...props}
-            >
-              {children ?? <Trash size={14} />}
-            </Button>
+          <TooltipTrigger
+            render={
+              <Button
+                onClick={onClear}
+                size="icon-sm"
+                variant="ghost"
+                disabled={isDisabled}
+                aria-label="Clear terminal output"
+                {...props}
+              />
+            }
+          >
+            {children ?? <Trash size={14} />}
           </TooltipTrigger>
           <TooltipContent side="bottom">Clear</TooltipContent>
         </Tooltip>
@@ -233,16 +237,18 @@ export const TerminalCloseButton = ({
 
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          onClick={onClose}
-          size="icon-sm"
-          variant="ghost"
-          aria-label="Close terminal"
-          {...props}
-        >
-          {children ?? <X size={14} />}
-        </Button>
+      <TooltipTrigger
+        render={
+          <Button
+            onClick={onClose}
+            size="icon-sm"
+            variant="ghost"
+            aria-label="Close terminal"
+            {...props}
+          />
+        }
+      >
+        {children ?? <X size={14} />}
       </TooltipTrigger>
       <TooltipContent side="bottom">Close</TooltipContent>
     </Tooltip>

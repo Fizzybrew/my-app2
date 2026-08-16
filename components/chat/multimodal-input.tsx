@@ -17,7 +17,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import useSWR from "swr";
 import { useLocalStorage, useWindowSize } from "usehooks-ts";
 import {
@@ -169,7 +169,10 @@ function PureMultimodalInput({
           setMessages(() => []);
           break;
         case "rename":
-          toast("Rename is available from the sidebar chat menu.");
+          toast.add({
+            type: "info",
+            description: "Rename is available from the sidebar chat menu.",
+          });
           break;
         case "model": {
           const modelBtn = document.querySelector<HTMLButtonElement>(
@@ -182,25 +185,29 @@ function PureMultimodalInput({
           setTheme(resolvedTheme === "dark" ? "light" : "dark");
           break;
         case "delete":
-          toast("Delete this chat?", {
-            action: {
-              label: "Delete",
-              onClick: () => {
+          const id = toast.add({
+            title: "Delete this chat?",
+            actionProps: {
+              children: "Delete",
+              onClick() {
                 fetch(
                   `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/chat?id=${chatId}`,
                   { method: "DELETE" },
                 );
                 router.push("/");
-                toast.success("Chat deleted");
+                toast.add({ title: "Chat deleted" });
+                toast.close(id);
               },
             },
           });
+
           break;
         case "purge":
-          toast("Delete all chats?", {
-            action: {
-              label: "Delete all",
-              onClick: () => {
+          toast.add({
+            title: "Delete all chats?",
+            actionProps: {
+              children: "Delete all",
+              onClick() {
                 fetch(
                   `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/history`,
                   {
@@ -208,7 +215,8 @@ function PureMultimodalInput({
                   },
                 );
                 router.push("/");
-                toast.success("All chats deleted");
+                toast.add({ title: "All chats deleted" });
+                toast.close(id);
               },
             },
           });
@@ -264,10 +272,13 @@ function PureMultimodalInput({
     formData.append("file", file);
 
     try {
-      const response = await fetch("/api/chat/files/upload", {
-        body: formData,
-        method: "POST",
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/files/upload`,
+        {
+          body: formData,
+          method: "POST",
+        },
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -280,9 +291,12 @@ function PureMultimodalInput({
         };
       }
       const { error } = await response.json();
-      toast.error(error);
+      toast.add({ type: "error", title: error });
     } catch {
-      toast.error("Failed to upload file, please try again!");
+      toast.add({
+        type: "error",
+        title: "Failed to upload file, please try again!",
+      });
     }
   }, []);
 
@@ -304,7 +318,7 @@ function PureMultimodalInput({
           ...successfullyUploadedAttachments,
         ]);
       } catch {
-        toast.error("Failed to upload files");
+        toast.add({ type: "error", title: "Failed to upload files" });
       } finally {
         setUploadQueue([]);
       }
@@ -346,7 +360,7 @@ function PureMultimodalInput({
           ...(successfullyUploadedAttachments as Attachment[]),
         ]);
       } catch {
-        toast.error("Failed to upload pasted image(s)");
+        toast.add({ type: "error", title: "Failed to upload pasted image(s)" });
       } finally {
         setUploadQueue([]);
       }
@@ -377,7 +391,10 @@ function PureMultimodalInput({
     if (status === "ready" || status === "error") {
       submitForm();
     } else {
-      toast.error("Please wait for the model to finish its response!");
+      toast.add({
+        type: "error",
+        title: "Please wait for the model to finish its response!",
+      });
     }
   }, [attachments.length, handleSlashSelect, input, status, submitForm]);
 
@@ -494,17 +511,20 @@ function PureMultimodalInput({
               open={modelSelectorOpen}
               onOpenChange={setModelSelectorOpen}
             >
-              <ModelSelectorTrigger asChild>
-                <Button
-                  data-testid="model-selector"
-                  aria-label="Select a model"
-                  variant="ghost"
-                  className="group"
-                >
-                  {provider ? <ModelSelectorLogo provider={provider} /> : null}
-                  <ModelSelectorName>{currentModel.name}</ModelSelectorName>
-                </Button>
+              <ModelSelectorTrigger
+                render={
+                  <Button
+                    data-testid="model-selector"
+                    aria-label="Select a model"
+                    variant="ghost"
+                    className="group"
+                  />
+                }
+              >
+                {provider ? <ModelSelectorLogo provider={provider} /> : null}
+                <ModelSelectorName>{currentModel.name}</ModelSelectorName>
               </ModelSelectorTrigger>
+
               {modelSelectorOpen && (
                 <ModelSelectorDropdown
                   selectedModelId={selectedModelId}
@@ -517,9 +537,9 @@ function PureMultimodalInput({
 
           {status === "submitted" || status === "streaming" ? (
             <Tooltip>
-              <TooltipTrigger asChild>
-                <StopButton setMessages={setMessages} stop={stop} />
-              </TooltipTrigger>
+              <TooltipTrigger
+                render={<StopButton setMessages={setMessages} stop={stop} />}
+              />
               <TooltipContent side="top">Stop replying</TooltipContent>
             </Tooltip>
           ) : (
@@ -536,14 +556,16 @@ function PureMultimodalInput({
                 </PromptInputSubmit>
               ) : (
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <PromptInputSubmit
-                      className="size-9"
-                      data-testid="send-button"
-                      status={status}
-                    >
-                      <ArrowUpIcon className="size-4" />
-                    </PromptInputSubmit>
+                  <TooltipTrigger
+                    render={
+                      <PromptInputSubmit
+                        className="size-9"
+                        data-testid="send-button"
+                        status={status}
+                      />
+                    }
+                  >
+                    <ArrowUpIcon className="size-4" />
                   </TooltipTrigger>
                   <TooltipContent side="top">Send a message</TooltipContent>
                 </Tooltip>
@@ -654,18 +676,16 @@ function PureAttachmentsButton({
 
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <span className="inline-block">
-          <Button
-            data-testid="attachments-button"
-            onClick={handleClick}
-            variant="ghost"
-            size="icon"
-            aria-label="Attach files and more"
-          >
-            <Paperclip className="-rotate-42" />
-          </Button>
-        </span>
+      <TooltipTrigger render={<span className="inline-block" />}>
+        <Button
+          data-testid="attachments-button"
+          onClick={handleClick}
+          variant="ghost"
+          size="icon"
+          aria-label="Attach files and more"
+        >
+          <Paperclip className="-rotate-42" />
+        </Button>
       </TooltipTrigger>
       <TooltipContent side="top">Attach files and more</TooltipContent>
     </Tooltip>
@@ -692,15 +712,17 @@ function PureStopButton({
 
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          data-testid="stop-button"
-          aria-label="Stop generating"
-          onClick={handleClick}
-          size="icon"
-        >
-          <Square fill="currentColor" />
-        </Button>
+      <TooltipTrigger
+        render={
+          <Button
+            data-testid="stop-button"
+            aria-label="Stop generating"
+            onClick={handleClick}
+            size="icon"
+          />
+        }
+      >
+        <Square fill="currentColor" />
       </TooltipTrigger>
       <TooltipContent side="left">Stop generating</TooltipContent>
     </Tooltip>

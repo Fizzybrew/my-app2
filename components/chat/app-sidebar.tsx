@@ -1,17 +1,11 @@
 "use client";
 
-import {
-  Ghost,
-  PanelLeftIcon,
-  PenSquareIcon,
-  TrashIcon,
-  HistoryIcon,
-} from "lucide-react";
+import { Ghost, PanelLeftIcon, PenSquareIcon, TrashIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { User } from "next-auth";
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
 import {
@@ -29,7 +23,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 import {
@@ -42,32 +35,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../ui/alert-dialog";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import dynamic from "next/dynamic";
-import { Skeleton } from "../ui/skeleton";
-
-const HistoryPopoverContent = dynamic(
-  () =>
-    import("./sidebar-history-popover").then(
-      (mod) => mod.HistoryPopoverContent,
-    ),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="w-64 p-2 rounded-3xl flex flex-col gap-2">
-        <Skeleton className="h-9 w-50" />
-        <Skeleton className="h-9 w-40" />
-        <Skeleton className="h-9 w-35" />
-        <Skeleton className="h-9 w-20" />
-      </div>
-    ),
-  },
-);
 
 export function AppSidebar({ user }: { user: User | undefined }) {
   const router = useRouter();
@@ -103,7 +70,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
       method: "DELETE",
     });
 
-    toast.success("All chats deleted");
+    toast.add({ type: "success", description: "All chats deleted" });
   }, [mutate, router]);
 
   return (
@@ -111,16 +78,15 @@ export function AppSidebar({ user }: { user: User | undefined }) {
       <Sidebar collapsible="icon">
         <SidebarHeader>
           <SidebarMenu>
-            <SidebarMenuItem className="flex flex-row items-center justify-between group/logo ">
+            <SidebarMenuItem className="flex justify-between group/logo">
               <SidebarMenuButton
-                className="size-9 group-data-[collapsible=icon]:group-hover/logo:opacity-0"
+                className="group-data-[collapsible=icon]:group-hover/logo:opacity-0 w-fit"
                 aria-label="Home"
-                asChild
+                render={<Link href="/" onClick={closeMobile} />}
               >
-                <Link href="/" onClick={closeMobile}>
-                  <Ghost />
-                </Link>
+                <Ghost />
               </SidebarMenuButton>
+
               <SidebarMenuButton
                 className="pointer-events-none absolute inset-0 opacity-0 group-data-[collapsible=icon]:pointer-events-auto group-data-[collapsible=icon]:group-hover/logo:opacity-100"
                 onClick={handleToggleSidebar}
@@ -131,32 +97,31 @@ export function AppSidebar({ user }: { user: User | undefined }) {
               </SidebarMenuButton>
 
               <div className="group-data-[collapsible=icon]:hidden">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <SidebarTrigger aria-label="Close sidebar" />
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">Close sidebar</TooltipContent>
-                </Tooltip>
+                <SidebarMenuButton
+                  tooltip={{
+                    children: "Close sidebar",
+                    hidden: false,
+                  }}
+                  onClick={handleToggleSidebar}
+                  aria-label="Close sidebar"
+                >
+                  <PanelLeftIcon />
+                </SidebarMenuButton>
               </div>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
-
         <SidebarContent>
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={handleNewChat}
-                    tooltip="New Chat"
-                    className="h-9 text-sm"
-                  >
+                  <SidebarMenuButton onClick={handleNewChat} tooltip="New Chat">
                     <PenSquareIcon />
                     <span>New chat</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                {user ? (
+                {user && (
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       onClick={handleShowDeleteAllDialog}
@@ -166,34 +131,13 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                       <span>Delete all</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                ) : null}
-
-                <SidebarMenuItem className="hidden group-data-[collapsible=icon]:block">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <SidebarMenuButton tooltip="History">
-                        <HistoryIcon />
-                        <span className="sr-only">History</span>
-                      </SidebarMenuButton>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      side="right"
-                      align="start"
-                      className="w-64 p-2 rounded-3xl"
-                    >
-                      <HistoryPopoverContent user={user} />
-                    </PopoverContent>
-                  </Popover>
-                </SidebarMenuItem>
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
           <SidebarHistory user={user} />
         </SidebarContent>
-
-        <SidebarFooter>
-          {user ? <SidebarUserNav user={user} /> : null}
-        </SidebarFooter>
+        <SidebarFooter>{user && <SidebarUserNav user={user} />}</SidebarFooter>
       </Sidebar>
 
       <AlertDialog

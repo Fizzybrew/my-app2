@@ -19,7 +19,7 @@ import useSWR, { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
 import { useDataStream } from "@/components/chat/data-stream-provider";
 import { getChatHistoryPaginationKey } from "@/components/chat/sidebar-history";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { useAutoResume } from "@/hooks/use-auto-resume";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import type { Vote } from "@/lib/db/schema";
@@ -111,9 +111,12 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     },
     onError: (error) => {
       if (error instanceof ChatbotError) {
-        toast.error(error.message);
+        toast.add({ type: "error", title: error.message });
       } else {
-        toast.error(error.message || "Oops, an error occurred!");
+        toast.add({
+          type: "error",
+          title: error.message || "Oops, an error occurred!",
+        });
       }
     },
     onFinish: () => {

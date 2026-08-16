@@ -4,6 +4,7 @@
 @import "shadcn/tailwind.css";
 
 @source "../node_modules/streamdown/dist/index.js";
+@source "../node_modules/streamdown/dist/*.js";
 
 @custom-variant dark (&:is(.dark, .dark *));
 
@@ -158,6 +159,10 @@
   html {
     @apply font-sans;
   }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
 }
 
 @utility overscroll-behavior-contain {
@@ -300,11 +305,11 @@
 }
 
 .cm-editor {
-  @apply bg-transparent! text-sm!;
+  @apply bg-background! text-sm!;
 }
 
 .cm-gutters {
-  @apply bg-transparent! border-r-0! outline-hidden!;
+  @apply bg-background! border-r-0! outline-hidden!;
 }
 
 .cm-gutter.cm-lineNumbers {

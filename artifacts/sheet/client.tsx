@@ -1,5 +1,5 @@
 import { parse, unparse } from "papaparse";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { Artifact } from "@/components/chat/create-artifact";
 import dynamic from "next/dynamic";
 import { ChartLine, Copy, RotateCcw, RotateCw, Sparkles } from "lucide-react";
@@ -64,7 +64,7 @@ export const sheetArtifact = new Artifact<"sheet", Metadata>({
         const cleanedCsv = unparse(nonEmptyRows);
 
         navigator.clipboard.writeText(cleanedCsv);
-        toast.success("Copied csv to clipboard!");
+        toast.add({ type: "success", description: "Copied csv to clipboard!" });
       },
     },
   ],

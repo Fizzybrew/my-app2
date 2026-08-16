@@ -175,7 +175,7 @@ Ultracite enforces strict type safety, accessibility standards, and consistent c
 - Use `with { type: "json" }` for JSON module imports.
 - Use numeric separators in numeric literals.
 - Use object spread instead of `Object.assign()` when constructing new objects.
-- Always use the radix argument when using `parseInt()`.
+- Always use the base argument when using `parseInt()`.
 - Make sure JSDoc comment lines start with a single asterisk, except for the first one.
 - Include a description parameter for `Symbol()`.
 - Don't use spread (`...`) syntax on accumulators.

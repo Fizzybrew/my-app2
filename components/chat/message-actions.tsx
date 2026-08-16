@@ -1,6 +1,6 @@
 import equal from "fast-deep-equal";
 import { memo, useCallback } from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { useSWRConfig } from "swr";
 import { useCopyToClipboard } from "usehooks-ts";
 import type { Vote } from "@/lib/db/schema";
@@ -37,12 +37,12 @@ export function PureMessageActions({
 
   const handleCopy = useCallback(async () => {
     if (!textFromParts) {
-      toast.error("There's no text to copy!");
+      toast.add({ type: "error", description: "There's no text to copy!" });
       return;
     }
 
     await copyToClipboard(textFromParts);
-    toast.success("Copied to clipboard!");
+    toast.add({ type: "success", description: "Copied to clipboard!" });
   }, [copyToClipboard, textFromParts]);
 
   const handleUpvote = useCallback(() => {

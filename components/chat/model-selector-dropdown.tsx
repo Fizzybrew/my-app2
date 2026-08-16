@@ -50,8 +50,8 @@ function ModelSelectorOption({
     if (!curated) return icon;
     return (
       <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="inline-flex">{icon}</span>
+        <TooltipTrigger render={<span className="inline-flex" />}>
+          {icon}
         </TooltipTrigger>
         <TooltipContent side="top">{label}</TooltipContent>
       </Tooltip>
@@ -99,8 +99,8 @@ function ModelSelectorOption({
   if (curated) return option;
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="w-full cursor-not-allowed">{option}</div>
+      <TooltipTrigger render={<div className="w-full cursor-not-allowed" />}>
+        {option}
       </TooltipTrigger>
       <TooltipContent side="right">
         This model is not available in the demo.
@@ -135,7 +135,7 @@ export function ModelSelectorDropdown({
     activeModels[0];
 
   return (
-    <ModelSelectorContent title={selectedModel.id} showCloseButton={false}>
+    <ModelSelectorContent title={selectedModel.id}>
       <ModelSelectorInput placeholder="Search models..." />
       <ModelSelectorList>
         {(() => {

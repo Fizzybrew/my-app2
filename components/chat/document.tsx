@@ -1,5 +1,5 @@
 import { memo, useCallback } from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { useArtifact } from "@/hooks/use-artifact";
 import type { ArtifactKind } from "./artifact";
 import { MessageCircle, Pencil, File, Loader } from "lucide-react";
@@ -99,9 +99,11 @@ function PureDocumentToolCall({
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
       if (isReadonly) {
-        toast.error(
-          "Viewing files in shared chats is currently not supported.",
-        );
+        toast.add({
+          type: "error",
+          description:
+            "Viewing files in shared chats is currently not supported.",
+        });
         return;
       }
 

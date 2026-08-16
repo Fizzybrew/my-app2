@@ -204,10 +204,10 @@ const PureDocumentHeader = ({
       <div className="text-sm font-medium">{title}</div>
     </div>
     <Tooltip>
-      <TooltipTrigger asChild>
-        <Button variant="ghost" size="icon" onClick={onFullScreen}>
-          <Maximize />
-        </Button>
+      <TooltipTrigger
+        render={<Button variant="ghost" size="icon" onClick={onFullScreen} />}
+      >
+        <Maximize />
       </TooltipTrigger>
       <TooltipContent side="bottom" align="center">
         Open in full screen

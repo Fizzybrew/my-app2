@@ -1,4 +1,4 @@
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { Artifact } from "@/components/chat/create-artifact";
 import { DiffView } from "@/components/chat/diffview";
 import { DocumentSkeleton } from "@/components/chat/document-skeleton";
@@ -67,7 +67,7 @@ export const textArtifact = new Artifact<"text", TextArtifactMetadata>({
       icon: <Copy />,
       onClick: ({ content }) => {
         navigator.clipboard.writeText(content);
-        toast.success("Copied to clipboard!");
+        toast.add({ type: "success", description: "Copied to clipboard!" });
       },
     },
   ],

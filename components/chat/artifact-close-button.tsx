@@ -19,15 +19,17 @@ function PureArtifactCloseButton() {
 
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          data-testid="artifact-close-button"
-          onClick={handleClick}
-          variant="ghost"
-          size="icon"
-        >
-          <X />
-        </Button>
+      <TooltipTrigger
+        render={
+          <Button
+            data-testid="artifact-close-button"
+            onClick={handleClick}
+            variant="ghost"
+            size="icon"
+          />
+        }
+      >
+        <X />
       </TooltipTrigger>
       <TooltipContent>Close</TooltipContent>
     </Tooltip>

@@ -117,29 +117,31 @@ const Tool = ({
 
   return (
     <Tooltip open={isHovered && !isAnimating}>
-      <TooltipTrigger asChild>
-        <MotionButton
-          size="icon"
-          variant={selectedTool === description ? "default" : "ghost"}
-          animate={{ opacity: 1, transition: { delay: 0.1 } }}
-          exit={{
-            opacity: 0,
-            scale: 0.9,
-            transition: { duration: 0.1 },
-          }}
-          initial={{ opacity: 0, scale: 1 }}
-          onClick={handleSelect}
-          onHoverEnd={handleHoverEnd}
-          onHoverStart={handleHoverStart}
-          onKeyDown={handleKeyDown}
-          aria-label={description}
-        >
-          {selectedTool === description ? (
-            <ArrowUp />
-          ) : isValidElement(icon) ? (
-            icon
-          ) : null}
-        </MotionButton>
+      <TooltipTrigger
+        render={
+          <MotionButton
+            size="icon"
+            variant={selectedTool === description ? "default" : "ghost"}
+            animate={{ opacity: 1, transition: { delay: 0.1 } }}
+            exit={{
+              opacity: 0,
+              scale: 0.9,
+              transition: { duration: 0.1 },
+            }}
+            initial={{ opacity: 0, scale: 1 }}
+            onClick={handleSelect}
+            onHoverEnd={handleHoverEnd}
+            onHoverStart={handleHoverStart}
+            onKeyDown={handleKeyDown}
+            aria-label={description}
+          />
+        }
+      >
+        {selectedTool === description ? (
+          <ArrowUp />
+        ) : isValidElement(icon) ? (
+          icon
+        ) : null}
       </TooltipTrigger>
       <TooltipContent side="left">{description}</TooltipContent>
     </Tooltip>
@@ -219,27 +221,29 @@ const ReadingLevelSelector = ({
 
       <TooltipProvider>
         <Tooltip open={!isAnimating}>
-          <TooltipTrigger asChild>
-            <motion.div
-              className={cx(
-                "absolute flex flex-row items-center rounded-full border bg-background p-3",
-                {
-                  "bg-background text-foreground": currentLevel === 2,
-                  "bg-primary text-primary-foreground": currentLevel !== 2,
-                },
-              )}
-              drag="y"
-              dragConstraints={{ bottom: 0, top: -dragConstraints }}
-              dragElastic={0}
-              dragMomentum={false}
-              onClick={handleClick}
-              onDragEnd={handleDragEnd}
-              onDragStart={handleDragStart}
-              style={{ y }}
-              transition={{ duration: 0.1 }}
-            >
-              {currentLevel === 2 ? <ArrowDownWideNarrow /> : <ArrowUp />}
-            </motion.div>
+          <TooltipTrigger
+            render={
+              <motion.div
+                className={cx(
+                  "absolute flex flex-row items-center rounded-full border bg-background p-3",
+                  {
+                    "bg-background text-foreground": currentLevel === 2,
+                    "bg-primary text-primary-foreground": currentLevel !== 2,
+                  },
+                )}
+                drag="y"
+                dragConstraints={{ bottom: 0, top: -dragConstraints }}
+                dragElastic={0}
+                dragMomentum={false}
+                onClick={handleClick}
+                onDragEnd={handleDragEnd}
+                onDragStart={handleDragStart}
+                style={{ y }}
+                transition={{ duration: 0.1 }}
+              />
+            }
+          >
+            {currentLevel === 2 ? <ArrowDownWideNarrow /> : <ArrowUp />}
           </TooltipTrigger>
           <TooltipContent side="left">
             {READING_LEVELS[currentLevel]}
@@ -404,7 +408,7 @@ const PureToolbar = ({
   if (toolsByArtifactKind.length === 0) return null;
 
   return (
-    <TooltipProvider delayDuration={0}>
+    <TooltipProvider>
       <motion.div
         animate={{ opacity: 1, scale: 1, y: 0 }}
         className="fixed right-6 bottom-6 z-50 flex cursor-pointer flex-col items-center rounded-3xl gap-0.5 border bg-background py-1 shadow-lg"
@@ -419,19 +423,21 @@ const PureToolbar = ({
       >
         {status === "submitted" || status === "streaming" ? (
           <Tooltip>
-            <TooltipTrigger asChild>
-              <MotionButton
-                size="icon"
-                variant="ghost"
-                animate={{ scale: 1.4 }}
-                exit={{ scale: 1 }}
-                initial={{ scale: 1 }}
-                key="stop-icon"
-                onClick={handleStop}
-                aria-label="Stop generating"
-              >
-                <Square fill="currentColor" />
-              </MotionButton>
+            <TooltipTrigger
+              render={
+                <MotionButton
+                  size="icon"
+                  variant="ghost"
+                  animate={{ scale: 1.4 }}
+                  exit={{ scale: 1 }}
+                  initial={{ scale: 1 }}
+                  key="stop-icon"
+                  onClick={handleStop}
+                  aria-label="Stop generating"
+                />
+              }
+            >
+              <Square fill="currentColor" />
             </TooltipTrigger>
             <TooltipContent side="left">Stop generating</TooltipContent>
           </Tooltip>

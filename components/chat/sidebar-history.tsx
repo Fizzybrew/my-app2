@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import { usePathname, useRouter } from "next/navigation";
 import type { User } from "next-auth";
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import useSWR from "swr";
 import useSWRInfinite from "swr/infinite";
 import {
@@ -169,7 +169,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
       { method: "DELETE" },
     );
 
-    toast.success("Chat deleted");
+    toast.add({ type: "success", title: "Chat deleted" });
   }, [deleteId, mutate, mutatePinned, pathname, router]);
 
   const handleShowDeleteDialog = useCallback((chatId: string) => {
@@ -214,9 +214,12 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
         );
         if (!res.ok) throw new Error("Failed to update pin");
         await mutatePinned();
-        toast.success(newPinned ? "Chat pinned" : "Chat unpinned");
+        toast.add({
+          type: "success",
+          title: newPinned ? "Chat pinned" : "Chat unpinned",
+        });
       } catch (error) {
-        toast.error("Failed to update pin");
+        toast.add({ type: "error", title: "Failed to update pin" });
         mutate();
         mutatePinned();
       }
@@ -264,9 +267,9 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
         await mutate(undefined, { revalidate: true });
         await mutatePinned(undefined, { revalidate: true });
 
-        toast.success("Chat renamed");
+        toast.add({ type: "success", title: "Chat renamed" });
       } catch (error) {
-        toast.error("Failed to rename chat");
+        toast.add({ type: "error", title: "Failed to rename chat" });
         mutate();
         mutatePinned();
       }
@@ -318,7 +321,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                 <div className="flex flex-col gap-4">
                   {pinnedList.length > 0 && (
                     <div>
-                      <div className="px-2 py-1 text-sm text-muted-foreground font-semibold">
+                      <div className="px-3 text-sm text-muted-foreground font-semibold">
                         Pinned
                       </div>
                       {pinnedList.map((chat) => (
@@ -337,7 +340,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
 
                   {groupedChats.today.length > 0 && (
                     <div>
-                      <div className="px-2 py-1 text-sm text-muted-foreground font-semibold">
+                      <div className="px-3 text-sm text-muted-foreground font-semibold">
                         Today
                       </div>
                       {groupedChats.today.map((chat) => (
@@ -356,7 +359,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
 
                   {groupedChats.yesterday.length > 0 && (
                     <div>
-                      <div className="px-2 py-1 text-sm text-muted-foreground font-semibold">
+                      <div className="px-3 text-sm text-muted-foreground font-semibold">
                         Yesterday
                       </div>
                       {groupedChats.yesterday.map((chat) => (
@@ -375,7 +378,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
 
                   {groupedChats.lastWeek.length > 0 && (
                     <div>
-                      <div className="px-2 py-1 text-sm text-muted-foreground font-semibold">
+                      <div className="px-3 text-sm text-muted-foreground font-semibold">
                         Last 7 days
                       </div>
                       {groupedChats.lastWeek.map((chat) => (
@@ -394,7 +397,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
 
                   {groupedChats.lastMonth.length > 0 && (
                     <div>
-                      <div className="px-2 py-1 text-sm text-muted-foreground font-semibold">
+                      <div className="px-3 text-sm text-muted-foreground font-semibold">
                         Last 30 days
                       </div>
                       {groupedChats.lastMonth.map((chat) => (
@@ -413,7 +416,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
 
                   {groupedChats.older.length > 0 && (
                     <div>
-                      <div className="px-2 py-1 text-sm text-muted-foreground font-semibold">
+                      <div className="px-3 text-sm text-muted-foreground font-semibold">
                         Older
                       </div>
                       {groupedChats.older.map((chat) => (
@@ -436,7 +439,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
 
           <motion.div onViewportEnter={handleViewportEnter} />
 
-          {hasReachedEnd ? null : (
+          {!hasReachedEnd && (
             <div className="mt-1 flex flex-row items-center gap-2 px-4 py-2 text-sidebar-foreground/50">
               <div className="animate-spin">
                 <Loader size={16} />

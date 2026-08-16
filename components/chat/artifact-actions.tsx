@@ -1,5 +1,5 @@
 import { memo, type ReactNode, useCallback, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { artifactDefinitions, type UIArtifact } from "./artifact";
 import type { ArtifactActionContext } from "./create-artifact";
@@ -40,7 +40,7 @@ function ArtifactActionButton({
     try {
       await Promise.resolve(action.onClick(actionContext));
     } catch {
-      toast.error("Failed to execute action");
+      toast.add({ type: "error", description: "Failed to execute action" });
     } finally {
       setIsLoading(false);
     }
@@ -62,7 +62,7 @@ function ArtifactActionButton({
     button
   ) : (
     <Tooltip>
-      <TooltipTrigger asChild>{button}</TooltipTrigger>
+      <TooltipTrigger render={button} />
       <TooltipContent side="left">{action.description}</TooltipContent>
     </Tooltip>
   );

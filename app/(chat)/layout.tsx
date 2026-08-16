@@ -7,7 +7,7 @@ import { ChatShell } from "@/components/chat/shell";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { ActiveChatProvider } from "@/hooks/use-active-chat";
 import { auth } from "../(auth)/auth";
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toast";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -33,7 +33,7 @@ async function SidebarShell({ children }: { children: React.ReactNode }) {
     <SidebarProvider defaultOpen={!isCollapsed}>
       <AppSidebar user={session?.user} />
       <SidebarInset>
-        <Toaster position="top-center" />
+        <Toaster />
         <Suspense fallback={<div className="flex h-dvh" />}>
           <ActiveChatProvider>
             <ChatShell />

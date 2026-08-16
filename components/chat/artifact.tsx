@@ -297,7 +297,7 @@ function PureArtifact({
 
   const artifactPanel = (
     <>
-      <div className="flex h-14 shrink-0 items-center justify-between px-4">
+      <div className="flex h-13 shrink-0 items-center justify-between px-4 bg-background">
         <div className="flex items-center gap-2">
           <ArtifactCloseButton />
           <div className="flex flex-col gap-0.5">

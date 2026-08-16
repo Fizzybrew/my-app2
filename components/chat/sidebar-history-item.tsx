@@ -115,34 +115,35 @@ const PureChatItem = ({
     <>
       <SidebarMenuItem>
         <SidebarMenuButton
-          asChild={!isEditing}
-          className="h-9 rounded-md"
+          render={
+            isEditing ? (
+              <input
+                ref={inputRef}
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onBlur={saveEditing}
+                onKeyDown={handleKeyDown}
+                className="h-8 w-full bg-transparent"
+              />
+            ) : (
+              <Link href={`/chat/${chat.id}`} onClick={closeMobile} />
+            )
+          }
           isActive={isActive}
         >
-          {isEditing ? (
-            <input
-              ref={inputRef}
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              onBlur={saveEditing}
-              onKeyDown={handleKeyDown}
-              className="h-9 w-full bg-transparent text-sm"
-            />
-          ) : (
-            <Link href={`/chat/${chat.id}`} onClick={closeMobile}>
-              <div className="flex items-center gap-1 truncate text-sm">
-                <span className="truncate">{chat.title}</span>
-              </div>
-            </Link>
+          {!isEditing && (
+            <div className="flex items-center gap-1 truncate">
+              <span className="truncate">{chat.title}</span>
+            </div>
           )}
         </SidebarMenuButton>
 
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuAction showOnHover={!isActive}>
-              <Ellipsis />
-              <span className="sr-only">More</span>
-            </SidebarMenuAction>
+          <DropdownMenuTrigger
+            render={<SidebarMenuAction showOnHover={!isActive} />}
+          >
+            <Ellipsis />
+            <span className="sr-only">More</span>
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="end" side="bottom">
@@ -170,7 +171,7 @@ const PureChatItem = ({
       </SidebarMenuItem>
 
       <Dialog open={shareOpen} onOpenChange={setShareOpen}>
-        <DialogContent showCloseButton={false}>
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Share chat link</DialogTitle>
             <DialogDescription>

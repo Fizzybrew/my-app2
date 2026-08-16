@@ -32,6 +32,7 @@ async function geocodeCity(
 export const getWeather = tool({
   description:
     "Get the current weather at a location. You can provide either coordinates or a city name.",
+  needsApproval: true,
   execute: async (input) => {
     let latitude: number;
     let longitude: number;
