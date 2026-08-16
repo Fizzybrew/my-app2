@@ -32,6 +32,7 @@ export function ChatShell() {
     votes,
     currentModelId,
     currentModelName,
+    currentModelCapabilities,
     setCurrentModel,
   } = useActiveChat();
 
@@ -58,7 +59,7 @@ export function ChatShell() {
         <div
           className={cn(
             "relative flex flex-col transition-[width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
-            isArtifactVisible ? "w-[40%]" : "w-full"
+            isArtifactVisible ? "w-[40%]" : "w-full",
           )}
         >
           <ChatHeader />
@@ -80,6 +81,7 @@ export function ChatShell() {
               <MultimodalInput
                 attachments={attachments}
                 chatId={chatId}
+                currentModelCapabilities={currentModelCapabilities}
                 currentModelName={currentModelName}
                 input={input}
                 isLoading={isLoading}
