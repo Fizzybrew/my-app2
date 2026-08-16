@@ -132,7 +132,9 @@ function parseModelsResponse(response: unknown): ChatModel[] {
 }
 
 async function fetchModelCatalog(): Promise<ChatModel[]> {
-  const response = await fetch(`${ROUTERAI_API_BASE_URL}/models`);
+  const response = await fetch(`${ROUTERAI_API_BASE_URL}/models`, {
+    cache: "no-store",
+  });
 
   if (!response.ok) {
     throw new Error(
