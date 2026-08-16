@@ -1,13 +1,26 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { customProvider, type LanguageModel } from "ai";
 import { isTestEnvironment } from "../constants";
-import { DEFAULT_CHAT_MODEL, titleModel } from "./models";
+import { DEFAULT_CHAT_MODEL, TITLE_MODEL_ID } from "./models";
 
 const ROUTERAI_API_BASE_URL =
   process.env.ROUTERAI_BASE_URL?.replace(/\/$/, "") ||
   "https://routerai.ru/api/v1";
 
 const MODEL_CATALOG_REVALIDATE_SECONDS = 60 * 60;
+
+const FALLBACK_MODEL: ChatModel = {
+  id: DEFAULT_CHAT_MODEL,
+  name: "DeepSeek V4 Flash",
+  provider: "deepseek",
+  description: "Default chat model",
+  contextLength: 0,
+  capabilities: {
+    tools: true,
+    vision: true,
+    reasoning: true,
+  },
+};
 
 const routerai = createOpenAI({
   apiKey: process.env.ROUTERAI_API_KEY,
@@ -36,19 +49,12 @@ type RouterAIModel = {
   context_length?: unknown;
   architecture?: {
     input_modalities?: unknown;
-    output_modalities?: unknown;
   } | null;
   supported_parameters?: unknown;
 };
 
-type RouterAIModelsResponse = {
-  data?: unknown;
-};
-
 function isStringArray(value: unknown): value is string[] {
-  return (
-    Array.isArray(value) && value.every((item) => typeof item === "string")
-  );
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
 function parseModel(model: RouterAIModel): ChatModel | null {
@@ -69,7 +75,7 @@ function parseModel(model: RouterAIModel): ChatModel | null {
     name: typeof model.name === "string" ? model.name : model.id,
     description:
       typeof model.description === "string" ? model.description : "",
-    provider: model.id.split("/")[0] ?? "unknown",
+    provider: model.id.includes("/") ? model.id.split("/")[0] : "routerai",
     contextLength:
       typeof model.context_length === "number" ? model.context_length : 0,
     capabilities: {
@@ -90,7 +96,7 @@ function parseModelsResponse(response: unknown): ChatModel[] {
     throw new Error("RouterAI returned an invalid models response");
   }
 
-  const data = (response as RouterAIModelsResponse).data;
+  const data = (response as { data?: unknown }).data;
 
   if (!Array.isArray(data)) {
     throw new Error("RouterAI returned an invalid models list");
@@ -100,36 +106,45 @@ function parseModelsResponse(response: unknown): ChatModel[] {
     .map((model) =>
       model && typeof model === "object"
         ? parseModel(model as RouterAIModel)
-        : null
+        : null,
     )
     .filter((model): model is ChatModel => model !== null)
     .filter((model) => model.capabilities.tools);
 }
 
-/** Fetch the current RouterAI model catalog. */
-export async function getModelCatalog(): Promise<ChatModel[]> {
+async function fetchModelCatalog(): Promise<ChatModel[]> {
   const response = await fetch(`${ROUTERAI_API_BASE_URL}/models`, {
     next: { revalidate: MODEL_CATALOG_REVALIDATE_SECONDS },
   });
 
   if (!response.ok) {
     throw new Error(
-      `Failed to fetch RouterAI models: ${response.status} ${response.statusText}`
+      `Failed to fetch RouterAI models: ${response.status} ${response.statusText}`,
     );
   }
 
   return parseModelsResponse(await response.json());
 }
 
-export async function getActiveModels(): Promise<ChatModel[]> {
-  return getModelCatalog();
+/**
+ * Return the current RouterAI catalog. If the provider is temporarily
+ * unavailable, keep the application usable with the configured default.
+ */
+export async function getModelCatalog(): Promise<ChatModel[]> {
+  try {
+    const models = await fetchModelCatalog();
+    return models.length > 0 ? models : [FALLBACK_MODEL];
+  } catch {
+    return [FALLBACK_MODEL];
+  }
 }
 
+export const getActiveModels = getModelCatalog;
+
 export async function getModelCapabilities(
-  modelId: string
+  modelId: string,
 ): Promise<ModelCapabilities> {
-  const models = await getModelCatalog();
-  const model = models.find((candidate) => candidate.id === modelId);
+  const model = await getModel(modelId);
 
   return (
     model?.capabilities ?? {
@@ -178,7 +193,7 @@ export function getTitleModel(): LanguageModel {
     return mockTitleModel;
   }
 
-  return routerai.languageModel(titleModel.id || DEFAULT_CHAT_MODEL);
+  return routerai.languageModel(TITLE_MODEL_ID);
 }
 
 export const myProvider = isTestEnvironment
