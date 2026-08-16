@@ -13,14 +13,13 @@ import { after } from "next/server";
 import { createResumableStreamContext } from "resumable-stream";
 import { auth, type UserType } from "@/app/(auth)/auth";
 import { entitlementsByUserType } from "@/lib/ai/entitlements";
-import {
-  allowedModelIds,
-  chatModels,
-  DEFAULT_CHAT_MODEL,
-  getModelCapabilities,
-} from "@/lib/ai/models";
+import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
-import { getLanguageModel } from "@/lib/ai/providers";
+import {
+  getLanguageModel,
+  getModel,
+  getModelCapabilities,
+} from "@/lib/ai/providers";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { editDocument } from "@/lib/ai/tools/edit-document";
 import { getWeather } from "@/lib/ai/tools/get-weather";
@@ -91,11 +90,9 @@ export async function POST(request: Request) {
       return new ChatbotError("unauthorized:chat").toResponse();
     }
 
-    const chatModel = allowedModelIds.has(selectedChatModel)
-      ? selectedChatModel
-      : DEFAULT_CHAT_MODEL;
-
-    const capabilities = getModelCapabilities(chatModel);
+    const requestedModel = await getModel(selectedChatModel);
+    const chatModel = requestedModel?.id ?? DEFAULT_CHAT_MODEL;
+    const capabilities = await getModelCapabilities(chatModel);
     const supportsTools = capabilities.tools;
     const isReasoningModel = capabilities.reasoning;
     const supportsVision = capabilities.vision;
@@ -208,8 +205,7 @@ export async function POST(request: Request) {
       ).toResponse();
     }
 
-    const modelConfig = chatModels.find((m) => m.id === chatModel);
-    const modelName = modelConfig?.name ?? chatModel;
+    const modelName = requestedModel?.name ?? chatModel;
     const modelMessages = await convertToModelMessages(uiMessages);
 
     const stream = createUIMessageStream({
@@ -446,13 +442,11 @@ export async function PATCH(request: Request) {
     return new ChatbotError("bad_request:api", "Missing chat id").toResponse();
   }
 
-  // Проверяем, что чат принадлежит пользователю
   const chat = await getChatById({ id });
   if (!chat || chat.userId !== session.user.id) {
     return new ChatbotError("forbidden:chat").toResponse();
   }
 
-  // Обновление pinned
   if (pinned !== undefined) {
     if (typeof pinned !== "boolean") {
       return new ChatbotError(
@@ -463,7 +457,6 @@ export async function PATCH(request: Request) {
     await updateChatPinnedById({ chatId: id, pinned });
   }
 
-  // Обновление title
   if (title !== undefined) {
     if (typeof title !== "string" || title.trim().length === 0) {
       return new ChatbotError("bad_request:api", "Invalid title").toResponse();
