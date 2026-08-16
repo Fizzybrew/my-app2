@@ -57,6 +57,20 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
+function normalizeModelName(name: string, modelId: string): string {
+  const provider = modelId.includes("/") ? modelId.split("/")[0] : "";
+  const providerLabel = provider.replace(/[-_]+/g, " ");
+  const escapedProvider = providerLabel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  if (!providerLabel) {
+    return name.trim();
+  }
+
+  return name
+    .trim()
+    .replace(new RegExp(`^${escapedProvider}\\s*:\\s*`, "i"), "");
+}
+
 function parseModel(model: RouterAIModel): ChatModel | null {
   if (typeof model.id !== "string" || model.id.length === 0) {
     return null;
@@ -72,7 +86,10 @@ function parseModel(model: RouterAIModel): ChatModel | null {
 
   return {
     id: model.id,
-    name: typeof model.name === "string" ? model.name : model.id,
+    name: normalizeModelName(
+      typeof model.name === "string" ? model.name : model.id,
+      model.id,
+    ),
     description:
       typeof model.description === "string" ? model.description : "",
     provider: model.id.includes("/") ? model.id.split("/")[0] : "routerai",
