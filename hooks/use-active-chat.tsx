@@ -9,7 +9,6 @@ import {
   type Dispatch,
   type ReactNode,
   type SetStateAction,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -52,28 +51,13 @@ function extractChatId(pathname: string): string | null {
   return match ? match[1] : null;
 }
 
-function getStoredModelId() {
-  if (typeof document === "undefined") {
-    return DEFAULT_CHAT_MODEL;
-  }
-
-  const cookieModel = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("chat-model="))
-    ?.split("=")[1];
-
-  if (!cookieModel) {
-    return DEFAULT_CHAT_MODEL;
-  }
-
-  try {
-    return decodeURIComponent(cookieModel);
-  } catch {
-    return DEFAULT_CHAT_MODEL;
-  }
-}
-
-export function ActiveChatProvider({ children }: { children: ReactNode }) {
+export function ActiveChatProvider({
+  children,
+  initialModelId = DEFAULT_CHAT_MODEL,
+}: {
+  children: ReactNode;
+  initialModelId?: string;
+}) {
   const pathname = usePathname();
   const { setDataStream, setWaitingStatus } = useDataStream();
   const { mutate } = useSWRConfig();
@@ -90,22 +74,16 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
 
   const chatId = chatIdFromUrl ?? newChatIdRef.current;
 
-  const [currentModelId, setCurrentModelId] = useState(DEFAULT_CHAT_MODEL);
-  const currentModelIdRef = useRef(currentModelId);
-
-  useEffect(() => {
-    const storedModelId = getStoredModelId();
-    setCurrentModelId(storedModelId);
-    currentModelIdRef.current = storedModelId;
-  }, []);
+  const [currentModelId, setCurrentModelId] = useState(initialModelId);
+  const currentModelIdRef = useRef(initialModelId);
 
   useEffect(() => {
     currentModelIdRef.current = currentModelId;
   }, [currentModelId]);
 
-  const handleModelChange = (modelId: string) => {
-    setCurrentModelId(modelId);
+  const selectModel = (modelId: string) => {
     currentModelIdRef.current = modelId;
+    setCurrentModelId(modelId);
   };
 
   const [input, setInput] = useState("");
@@ -275,7 +253,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       messages,
       regenerate,
       sendMessage,
-      setCurrentModelId: handleModelChange,
+      setCurrentModelId: selectModel,
       setInput,
       setMessages,
       status,
