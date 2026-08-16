@@ -1,6 +1,6 @@
 "use client";
 
-import { BrainIcon, EyeIcon, LockIcon, WrenchIcon } from "lucide-react";
+import { BrainIcon, EyeIcon, WrenchIcon } from "lucide-react";
 import { type ReactNode, useCallback } from "react";
 import useSWR from "swr";
 import {
@@ -52,13 +52,14 @@ function ModelSelectorOption({
   const handleSelect = useCallback(() => {
     onModelChange?.(model.id);
     setCookie("chat-model", model.id);
+    setCookie("chat-model-name", model.name);
     setOpen(false);
     setTimeout(() => {
       document
         .querySelector<HTMLTextAreaElement>("[data-testid='multimodal-input']")
         ?.focus();
     }, 50);
-  }, [model.id, onModelChange, setOpen]);
+  }, [model.id, model.name, onModelChange, setOpen]);
 
   return (
     <ModelSelectorItem
