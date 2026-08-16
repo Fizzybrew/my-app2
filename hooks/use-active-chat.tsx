@@ -53,14 +53,32 @@ function extractChatId(pathname: string): string | null {
   return match ? match[1] : null;
 }
 
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  const prefix = `${name}=`;
+  const value = document.cookie
+    .split(";")
+    .map((cookie) => cookie.trim())
+    .find((cookie) => cookie.startsWith(prefix))
+    ?.slice(prefix.length);
+
+  return value ? decodeURIComponent(value) : null;
+}
+
+function getInitialModel() {
+  return {
+    id: getCookie("chat-model") ?? DEFAULT_CHAT_MODEL,
+    name: getCookie("chat-model-name") ?? "DeepSeek V4 Flash",
+  };
+}
+
 export function ActiveChatProvider({
   children,
-  initialModelId = DEFAULT_CHAT_MODEL,
-  initialModelName = "DeepSeek V4 Flash",
 }: {
   children: ReactNode;
-  initialModelId?: string;
-  initialModelName?: string;
 }) {
   const pathname = usePathname();
   const { setDataStream, setWaitingStatus } = useDataStream();
@@ -78,10 +96,7 @@ export function ActiveChatProvider({
 
   const chatId = chatIdFromUrl ?? newChatIdRef.current;
 
-  const [currentModel, setCurrentModelState] = useState({
-    id: initialModelId,
-    name: initialModelName,
-  });
+  const [currentModel, setCurrentModelState] = useState(getInitialModel);
   const currentModelRef = useRef(currentModel);
 
   useEffect(() => {
