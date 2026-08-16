@@ -34,7 +34,11 @@ function ModelSelectorOption({
 }: {
   capabilities: Record<string, ModelCapabilities> | undefined;
   model: ChatModel;
-  onModelChange?: (model: { id: string; name: string }) => void;
+  onModelChange?: (model: {
+    id: string;
+    name: string;
+    capabilities: ModelCapabilities;
+  }) => void;
   selectedModelId: string;
   setOpen: (open: boolean) => void;
 }) {
@@ -48,7 +52,17 @@ function ModelSelectorOption({
   );
 
   const handleSelect = useCallback(() => {
-    onModelChange?.({ id: model.id, name: model.name });
+    const modelCapabilities = capabilities?.[model.id] ?? {
+      tools: false,
+      vision: false,
+      reasoning: false,
+    };
+
+    onModelChange?.({
+      id: model.id,
+      name: model.name,
+      capabilities: modelCapabilities,
+    });
     setCookie("chat-model", model.id);
     setCookie("chat-model-name", model.name);
     setOpen(false);
@@ -57,7 +71,7 @@ function ModelSelectorOption({
         .querySelector<HTMLTextAreaElement>("[data-testid='multimodal-input']")
         ?.focus();
     }, 50);
-  }, [model.id, model.name, onModelChange, setOpen]);
+  }, [capabilities, model.id, model.name, onModelChange, setOpen]);
 
   return (
     <ModelSelectorItem
@@ -87,7 +101,11 @@ export function ModelSelectorDropdown({
   setOpen,
 }: {
   selectedModelId: string;
-  onModelChange?: (model: { id: string; name: string }) => void;
+  onModelChange?: (model: {
+    id: string;
+    name: string;
+    capabilities: ModelCapabilities;
+  }) => void;
   setOpen: (open: boolean) => void;
 }) {
   const { data: modelsData } = useSWR<{
