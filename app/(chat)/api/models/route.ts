@@ -1,22 +1,21 @@
-import { getActiveModels, modelCapabilities } from "@/lib/ai/models";
+import { getModelCatalog } from "@/lib/ai/providers";
 
 export async function GET() {
-  const headers = {
-    "Cache-Control": "no-cache, no-store, must-revalidate",
-  };
+  const models = await getModelCatalog();
 
-  const models = getActiveModels();
-  const capabilities = models.reduce(
-    (acc, model) => {
-      acc[model.id] = modelCapabilities[model.id] || {
-        reasoning: false,
-        tools: true,
-        vision: false,
-      };
-      return acc;
+  return Response.json(
+    {
+      models,
+      capabilities: Object.fromEntries(
+        models.map((model) => [model.id, model.capabilities]),
+      ),
     },
-    {} as Record<string, any>,
+    {
+      headers: {
+        // The provider catalog is already cached server-side. Keep this
+        // response private so clients do not cache a potentially stale list.
+        "Cache-Control": "private, no-store",
+      },
+    },
   );
-
-  return Response.json({ capabilities, models }, { headers });
 }
