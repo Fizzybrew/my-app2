@@ -11,6 +11,7 @@ import {
   ModelSelectorList,
   ModelSelectorName,
 } from "@/components/ai-elements/model-selector";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
@@ -29,7 +30,6 @@ function ModelSelectorOption({
   capabilities,
   model,
   onModelChange,
-  selectedModelId,
   setOpen,
 }: {
   capabilities: Record<string, ModelCapabilities> | undefined;
@@ -39,7 +39,6 @@ function ModelSelectorOption({
     name: string;
     capabilities: ModelCapabilities;
   }) => void;
-  selectedModelId: string;
   setOpen: (open: boolean) => void;
 }) {
   const maybeWithTooltip = (icon: ReactNode, label: string) => (
@@ -95,6 +94,19 @@ function ModelSelectorOption({
   );
 }
 
+function ModelSelectorSkeleton() {
+  return (
+    <div className="space-y-2 p-2">
+      {Array.from({ length: 6 }, (_, index) => (
+        <div className="flex h-8 items-center gap-3 px-2" key={index}>
+          <Skeleton className="h-4 flex-1 rounded-md" />
+          <Skeleton className="h-4 w-16 rounded-md" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function ModelSelectorDropdown({
   selectedModelId,
   onModelChange,
@@ -108,7 +120,7 @@ export function ModelSelectorDropdown({
   }) => void;
   setOpen: (open: boolean) => void;
 }) {
-  const { data: modelsData } = useSWR<{
+  const { data: modelsData, error } = useSWR<{
     models: ChatModel[];
     capabilities: Record<string, ModelCapabilities>;
   }>(
@@ -123,10 +135,6 @@ export function ModelSelectorDropdown({
     models.find((model) => model.id === selectedModelId) ??
     models.find((model) => model.id === DEFAULT_CHAT_MODEL) ??
     models[0];
-
-  if (!selectedModel) {
-    return null;
-  }
 
   const grouped = models.reduce<Record<string, ChatModel[]>>((acc, model) => {
     const key = model.provider || "unknown";
@@ -160,28 +168,35 @@ export function ModelSelectorDropdown({
   };
 
   return (
-    <ModelSelectorContent title={selectedModel.id}>
+    <ModelSelectorContent title={selectedModel?.id ?? selectedModelId}>
       <ModelSelectorInput placeholder="Search models..." />
       <ModelSelectorList>
-        {Object.keys(grouped)
-          .sort((a, b) => a.localeCompare(b))
-          .map((provider) => (
-            <ModelSelectorGroup
-              heading={providerNames[provider] ?? provider}
-              key={provider}
-            >
-              {grouped[provider].map((model) => (
-                <ModelSelectorOption
-                  capabilities={capabilities}
-                  key={model.id}
-                  model={model}
-                  onModelChange={onModelChange}
-                  selectedModelId={selectedModelId}
-                  setOpen={setOpen}
-                />
-              ))}
-            </ModelSelectorGroup>
-          ))}
+        {!modelsData && !error ? (
+          <ModelSelectorSkeleton />
+        ) : error ? (
+          <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+            Unable to load models. Try again.
+          </div>
+        ) : (
+          Object.keys(grouped)
+            .sort((a, b) => a.localeCompare(b))
+            .map((provider) => (
+              <ModelSelectorGroup
+                heading={providerNames[provider] ?? provider}
+                key={provider}
+              >
+                {grouped[provider].map((model) => (
+                  <ModelSelectorOption
+                    capabilities={capabilities}
+                    key={model.id}
+                    model={model}
+                    onModelChange={onModelChange}
+                    setOpen={setOpen}
+                  />
+                ))}
+              </ModelSelectorGroup>
+            ))
+        )}
       </ModelSelectorList>
     </ModelSelectorContent>
   );
