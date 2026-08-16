@@ -91,14 +91,14 @@ function SlashCommandMenuItem({
     (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
     },
-    [],
+    []
   );
 
   return (
     <button
       className={cn(
         "flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors",
-        index === selectedIndex ? "bg-muted/70" : "hover:bg-muted/40",
+        index === selectedIndex ? "bg-muted/70" : "hover:bg-muted/40"
       )}
       data-selected={index === selectedIndex}
       onClick={handleClick}
@@ -128,15 +128,19 @@ export function SlashCommandMenu({
 }: SlashCommandMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const filtered = slashCommands.filter((cmd) =>
-    cmd.name.startsWith(query.toLowerCase()),
+    cmd.name.startsWith(query.toLowerCase())
   );
 
   useEffect(() => {
     const selected = menuRef.current?.querySelector("[data-selected='true']");
-    if (selected) selected.scrollIntoView({ block: "nearest" });
+    if (selected) {
+      selected.scrollIntoView({ block: "nearest" });
+    }
   }, []);
 
-  if (filtered.length === 0) return null;
+  if (filtered.length === 0) {
+    return null;
+  }
 
   return (
     <div

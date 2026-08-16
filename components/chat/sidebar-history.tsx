@@ -1,11 +1,11 @@
 "use client";
 
 import { isToday, isYesterday, subMonths, subWeeks } from "date-fns";
+import { Loader } from "lucide-react";
 import { motion } from "motion/react";
 import { usePathname, useRouter } from "next/navigation";
 import type { User } from "next-auth";
 import { useCallback, useState } from "react";
-import { toast } from "@/components/ui/toast";
 import useSWR from "swr";
 import useSWRInfinite from "swr/infinite";
 import {
@@ -27,10 +27,10 @@ import {
   SidebarMenuSkeleton,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { toast } from "@/components/ui/toast";
 import type { Chat } from "@/lib/db/schema";
 import { fetcher } from "@/lib/utils";
 import { ChatItem } from "./sidebar-history-item";
-import { Loader } from "lucide-react";
 
 type GroupedChats = {
   today: Chat[];
@@ -76,22 +76,27 @@ export const groupChatsByDate = (chats: Chat[]): GroupedChats => {
       older: [],
       today: [],
       yesterday: [],
-    } as GroupedChats,
+    } as GroupedChats
   );
 };
 
 export function getChatHistoryPaginationKey(
   pageIndex: number,
-  previousPageData: ChatHistory,
+  previousPageData: ChatHistory
 ) {
-  if (previousPageData && previousPageData.hasMore === false) return null;
+  if (previousPageData && previousPageData.hasMore === false) {
+    return null;
+  }
 
-  if (pageIndex === 0)
+  if (pageIndex === 0) {
     return `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/history?limit=${PAGE_SIZE}`;
+  }
 
   const firstChatFromPage = previousPageData.chats.at(-1);
 
-  if (!firstChatFromPage) return null;
+  if (!firstChatFromPage) {
+    return null;
+  }
 
   return `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/history?ending_before=${firstChatFromPage.id}&limit=${PAGE_SIZE}`;
 }
@@ -110,7 +115,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
       ? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/history?pinned=true`
       : null,
     fetcher,
-    { revalidateOnFocus: false },
+    { revalidateOnFocus: false }
   );
 
   const {
@@ -122,7 +127,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
   } = useSWRInfinite<ChatHistory>(
     user ? getChatHistoryPaginationKey : () => null,
     fetcher,
-    { fallbackData: [], revalidateOnFocus: false },
+    { fallbackData: [], revalidateOnFocus: false }
   );
 
   const router = useRouter();
@@ -143,7 +148,9 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
 
     setShowDeleteDialog(false);
 
-    if (isCurrentChat) router.replace("/");
+    if (isCurrentChat) {
+      router.replace("/");
+    }
 
     mutate((chatHistories) => {
       if (chatHistories) {
@@ -166,10 +173,10 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
 
     fetch(
       `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/chat?id=${chatToDelete}`,
-      { method: "DELETE" },
+      { method: "DELETE" }
     );
 
-    toast.add({ type: "success", title: "Chat deleted" });
+    toast.add({ title: "Chat deleted", type: "success" });
   }, [deleteId, mutate, mutatePinned, pathname, router]);
 
   const handleShowDeleteDialog = useCallback((chatId: string) => {
@@ -180,15 +187,16 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
   const handlePinToggle = useCallback(
     async (chatId: string, newPinned: boolean) => {
       mutatePinned((prev) => {
-        if (!prev) return prev;
+        if (!prev) {
+          return prev;
+        }
         if (newPinned) {
           return prev;
-        } else {
-          return {
-            ...prev,
-            chats: prev.chats.filter((chat) => chat.id !== chatId),
-          };
         }
+        return {
+          ...prev,
+          chats: prev.chats.filter((chat) => chat.id !== chatId),
+        };
       }, false);
 
       mutate((chatHistories) => {
@@ -196,7 +204,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
           return chatHistories.map((page) => ({
             ...page,
             chats: page.chats.map((chat) =>
-              chat.id === chatId ? { ...chat, pinned: newPinned } : chat,
+              chat.id === chatId ? { ...chat, pinned: newPinned } : chat
             ),
           }));
         }
@@ -207,24 +215,26 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/chat`,
           {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id: chatId, pinned: newPinned }),
-          },
+            headers: { "Content-Type": "application/json" },
+            method: "PATCH",
+          }
         );
-        if (!res.ok) throw new Error("Failed to update pin");
+        if (!res.ok) {
+          throw new Error("Failed to update pin");
+        }
         await mutatePinned();
         toast.add({
-          type: "success",
           title: newPinned ? "Chat pinned" : "Chat unpinned",
+          type: "success",
         });
       } catch (error) {
-        toast.add({ type: "error", title: "Failed to update pin" });
+        toast.add({ title: "Failed to update pin", type: "error" });
         mutate();
         mutatePinned();
       }
     },
-    [mutate, mutatePinned],
+    [mutate, mutatePinned]
   );
 
   const handleRename = useCallback(
@@ -234,7 +244,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
           return chatHistories.map((page) => ({
             ...page,
             chats: page.chats.map((chat) =>
-              chat.id === chatId ? { ...chat, title: newTitle } : chat,
+              chat.id === chatId ? { ...chat, title: newTitle } : chat
             ),
           }));
         }
@@ -246,7 +256,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
           return {
             ...prev,
             chats: prev.chats.map((chat) =>
-              chat.id === chatId ? { ...chat, title: newTitle } : chat,
+              chat.id === chatId ? { ...chat, title: newTitle } : chat
             ),
           };
         }
@@ -257,24 +267,26 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/chat`,
           {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id: chatId, title: newTitle }),
-          },
+            headers: { "Content-Type": "application/json" },
+            method: "PATCH",
+          }
         );
-        if (!res.ok) throw new Error("Failed to rename");
+        if (!res.ok) {
+          throw new Error("Failed to rename");
+        }
 
         await mutate(undefined, { revalidate: true });
         await mutatePinned(undefined, { revalidate: true });
 
-        toast.add({ type: "success", title: "Chat renamed" });
+        toast.add({ title: "Chat renamed", type: "success" });
       } catch (error) {
-        toast.add({ type: "error", title: "Failed to rename chat" });
+        toast.add({ title: "Failed to rename chat", type: "error" });
         mutate();
         mutatePinned();
       }
     },
-    [mutate, mutatePinned],
+    [mutate, mutatePinned]
   );
 
   const handleViewportEnter = useCallback(() => {
@@ -313,7 +325,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                 ? paginatedChatHistories.flatMap((page) => page.chats)
                 : [];
               const unPinnedChats = chatsFromHistory.filter(
-                (chat) => !chat.pinned,
+                (chat) => !chat.pinned
               );
               const groupedChats = groupChatsByDate(unPinnedChats);
 
@@ -326,13 +338,13 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                       </div>
                       {pinnedList.map((chat) => (
                         <ChatItem
-                          key={chat.id}
                           chat={chat}
                           isActive={chat.id === id}
+                          key={chat.id}
                           onDelete={handleShowDeleteDialog}
                           onPinToggle={handlePinToggle}
-                          setOpenMobile={setOpenMobile}
                           onRename={handleRename}
+                          setOpenMobile={setOpenMobile}
                         />
                       ))}
                     </div>
@@ -345,13 +357,13 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                       </div>
                       {groupedChats.today.map((chat) => (
                         <ChatItem
-                          key={chat.id}
                           chat={chat}
                           isActive={chat.id === id}
+                          key={chat.id}
                           onDelete={handleShowDeleteDialog}
                           onPinToggle={handlePinToggle}
-                          setOpenMobile={setOpenMobile}
                           onRename={handleRename}
+                          setOpenMobile={setOpenMobile}
                         />
                       ))}
                     </div>
@@ -364,13 +376,13 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                       </div>
                       {groupedChats.yesterday.map((chat) => (
                         <ChatItem
-                          key={chat.id}
                           chat={chat}
                           isActive={chat.id === id}
+                          key={chat.id}
                           onDelete={handleShowDeleteDialog}
                           onPinToggle={handlePinToggle}
-                          setOpenMobile={setOpenMobile}
                           onRename={handleRename}
+                          setOpenMobile={setOpenMobile}
                         />
                       ))}
                     </div>
@@ -383,13 +395,13 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                       </div>
                       {groupedChats.lastWeek.map((chat) => (
                         <ChatItem
-                          key={chat.id}
                           chat={chat}
                           isActive={chat.id === id}
+                          key={chat.id}
                           onDelete={handleShowDeleteDialog}
                           onPinToggle={handlePinToggle}
-                          setOpenMobile={setOpenMobile}
                           onRename={handleRename}
+                          setOpenMobile={setOpenMobile}
                         />
                       ))}
                     </div>
@@ -402,13 +414,13 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                       </div>
                       {groupedChats.lastMonth.map((chat) => (
                         <ChatItem
-                          key={chat.id}
                           chat={chat}
                           isActive={chat.id === id}
+                          key={chat.id}
                           onDelete={handleShowDeleteDialog}
                           onPinToggle={handlePinToggle}
-                          setOpenMobile={setOpenMobile}
                           onRename={handleRename}
+                          setOpenMobile={setOpenMobile}
                         />
                       ))}
                     </div>
@@ -421,13 +433,13 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                       </div>
                       {groupedChats.older.map((chat) => (
                         <ChatItem
-                          key={chat.id}
                           chat={chat}
                           isActive={chat.id === id}
+                          key={chat.id}
                           onDelete={handleShowDeleteDialog}
                           onPinToggle={handlePinToggle}
-                          setOpenMobile={setOpenMobile}
                           onRename={handleRename}
+                          setOpenMobile={setOpenMobile}
                         />
                       ))}
                     </div>

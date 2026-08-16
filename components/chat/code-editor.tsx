@@ -54,7 +54,7 @@ function PureCodeEditor({ content, onSaveContent, status }: EditorProps) {
       const updateListener = EditorView.updateListener.of((update) => {
         if (update.docChanged) {
           const transaction = update.transactions.find(
-            (tr) => !tr.annotation(Transaction.remote),
+            (tr) => !tr.annotation(Transaction.remote)
           );
 
           if (transaction) {
@@ -66,9 +66,13 @@ function PureCodeEditor({ content, onSaveContent, status }: EditorProps) {
 
       const scrollListener = EditorView.domEventHandlers({
         scroll() {
-          if (status !== "streaming") return;
+          if (status !== "streaming") {
+            return;
+          }
           const dom = editorRef.current?.scrollDOM;
-          if (!dom) return;
+          if (!dom) {
+            return;
+          }
           const atBottom =
             dom.scrollHeight - dom.scrollTop - dom.clientHeight < 40;
           userScrolledRef.current = !atBottom;
@@ -96,7 +100,9 @@ function PureCodeEditor({ content, onSaveContent, status }: EditorProps) {
   }, [onSaveContent, status]);
 
   useEffect(() => {
-    if (status !== "streaming") userScrolledRef.current = false;
+    if (status !== "streaming") {
+      userScrolledRef.current = false;
+    }
   }, [status]);
 
   useEffect(() => {
@@ -118,7 +124,9 @@ function PureCodeEditor({ content, onSaveContent, status }: EditorProps) {
         if (status === "streaming" && !userScrolledRef.current) {
           requestAnimationFrame(() => {
             const dom = editorRef.current?.scrollDOM;
-            if (dom) dom.scrollTo({ top: dom.scrollHeight });
+            if (dom) {
+              dom.scrollTo({ top: dom.scrollHeight });
+            }
           });
         }
       }
@@ -127,20 +135,26 @@ function PureCodeEditor({ content, onSaveContent, status }: EditorProps) {
 
   return (
     <div
+      aria-label="Code editor"
       className="not-prose relative size-full"
       ref={containerRef}
-      aria-label="Code editor"
     />
   );
 }
 
 export const CodeEditor = memo(PureCodeEditor, (prevProps, nextProps) => {
-  if (prevProps.status === "streaming" && nextProps.status === "streaming")
+  if (prevProps.status === "streaming" && nextProps.status === "streaming") {
     return false;
-  if (prevProps.content !== nextProps.content) return false;
-  if (prevProps.status !== nextProps.status) return false;
-  if (prevProps.currentVersionIndex !== nextProps.currentVersionIndex)
+  }
+  if (prevProps.content !== nextProps.content) {
     return false;
+  }
+  if (prevProps.status !== nextProps.status) {
+    return false;
+  }
+  if (prevProps.currentVersionIndex !== nextProps.currentVersionIndex) {
+    return false;
+  }
 
   return true;
 });

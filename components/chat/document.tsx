@@ -1,12 +1,12 @@
+import { File, Loader, MessageCircle, Pencil } from "lucide-react";
 import { memo, useCallback } from "react";
 import { toast } from "@/components/ui/toast";
 import { useArtifact } from "@/hooks/use-artifact";
 import type { ArtifactKind } from "./artifact";
-import { MessageCircle, Pencil, File, Loader } from "lucide-react";
 
 const getActionText = (
   type: "create" | "update" | "request-suggestions",
-  tense: "present" | "past",
+  tense: "present" | "past"
 ) => {
   switch (type) {
     case "create":
@@ -55,7 +55,7 @@ function PureDocumentToolResult({
         title: result.title,
       }));
     },
-    [isReadonly, result, setArtifact],
+    [isReadonly, result, setArtifact]
   );
 
   return (
@@ -100,9 +100,9 @@ function PureDocumentToolCall({
     (event: React.MouseEvent<HTMLButtonElement>) => {
       if (isReadonly) {
         toast.add({
-          type: "error",
           description:
             "Viewing files in shared chats is currently not supported.",
+          type: "error",
         });
         return;
       }
@@ -122,7 +122,7 @@ function PureDocumentToolCall({
         isVisible: true,
       }));
     },
-    [isReadonly, setArtifact],
+    [isReadonly, setArtifact]
   );
 
   return (

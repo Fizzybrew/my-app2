@@ -2,8 +2,8 @@
 
 import type { UseChatHelpers } from "@ai-sdk/react";
 import cx from "classnames";
-import { motion, useMotionValue, useTransform } from "motion/react";
 import { ArrowDownWideNarrow, ArrowUp, Square, WrenchIcon } from "lucide-react";
+import { motion, useMotionValue, useTransform } from "motion/react";
 import { nanoid } from "nanoid";
 import {
   type Dispatch,
@@ -17,13 +17,13 @@ import {
   useState,
 } from "react";
 import { useOnClickOutside } from "usehooks-ts";
+import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Button } from "@/components/ui/button";
 import type { ChatMessage } from "@/lib/types";
 import { type ArtifactKind, artifactDefinitions } from "./artifact";
 import type { ArtifactToolbarItem } from "./create-artifact";
@@ -69,7 +69,9 @@ const Tool = ({
   const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
-    if (selectedTool !== description) setIsHovered(false);
+    if (selectedTool !== description) {
+      setIsHovered(false);
+    }
   }, [selectedTool, description]);
 
   const handleSelect = useCallback(() => {
@@ -101,7 +103,9 @@ const Tool = ({
   ]);
 
   const handleHoverEnd = useCallback(() => {
-    if (selectedTool !== description) setIsHovered(false);
+    if (selectedTool !== description) {
+      setIsHovered(false);
+    }
   }, [description, selectedTool]);
 
   const handleHoverStart = useCallback(() => {
@@ -110,9 +114,11 @@ const Tool = ({
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
-      if (event.key === "Enter") handleSelect();
+      if (event.key === "Enter") {
+        handleSelect();
+      }
     },
-    [handleSelect],
+    [handleSelect]
   );
 
   return (
@@ -120,9 +126,8 @@ const Tool = ({
       <TooltipTrigger
         render={
           <MotionButton
-            size="icon"
-            variant={selectedTool === description ? "default" : "ghost"}
             animate={{ opacity: 1, transition: { delay: 0.1 } }}
+            aria-label={description}
             exit={{
               opacity: 0,
               scale: 0.9,
@@ -133,7 +138,8 @@ const Tool = ({
             onHoverEnd={handleHoverEnd}
             onHoverStart={handleHoverStart}
             onKeyDown={handleKeyDown}
-            aria-label={description}
+            size="icon"
+            variant={selectedTool === description ? "default" : "ghost"}
           />
         }
       >
@@ -229,7 +235,7 @@ const ReadingLevelSelector = ({
                   {
                     "bg-background text-foreground": currentLevel === 2,
                     "bg-primary text-primary-foreground": currentLevel !== 2,
-                  },
+                  }
                 )}
                 drag="y"
                 dragConstraints={{ bottom: 0, top: -dragConstraints }}
@@ -275,6 +281,7 @@ export const Tools = ({
   >
     {[...tools].reverse().map((tool) => (
       <Tool
+        aria-label={tool.description}
         description={tool.description}
         icon={tool.icon}
         isAnimating={isAnimating}
@@ -283,7 +290,6 @@ export const Tools = ({
         selectedTool={selectedTool}
         sendMessage={sendMessage}
         setSelectedTool={setSelectedTool}
-        aria-label={tool.description}
       />
     ))}
   </motion.div>
@@ -291,7 +297,7 @@ export const Tools = ({
 
 const createFixErrorTool = (
   consoleOutput: string,
-  documentId?: string,
+  documentId?: string
 ): ArtifactToolbarItem => ({
   description: "Fix error",
   icon: <WrenchIcon className="size-4" />,
@@ -343,7 +349,9 @@ const PureToolbar = ({
   });
 
   const startCloseTimer = useCallback(() => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
 
     timeoutRef.current = setTimeout(() => {
       setSelectedTool(null);
@@ -352,18 +360,24 @@ const PureToolbar = ({
   }, [setIsToolbarVisible]);
 
   const cancelCloseTimer = useCallback(() => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
   }, []);
 
   useEffect(
     () => () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
     },
-    [],
+    []
   );
 
   useEffect(() => {
-    if (status === "streaming") setIsToolbarVisible(false);
+    if (status === "streaming") {
+      setIsToolbarVisible(false);
+    }
   }, [status, setIsToolbarVisible]);
 
   const handleAnimationComplete = useCallback(() => {
@@ -375,13 +389,17 @@ const PureToolbar = ({
   }, []);
 
   const handleHoverEnd = useCallback(() => {
-    if (status === "streaming") return;
+    if (status === "streaming") {
+      return;
+    }
 
     startCloseTimer();
   }, [startCloseTimer, status]);
 
   const handleHoverStart = useCallback(() => {
-    if (status === "streaming") return;
+    if (status === "streaming") {
+      return;
+    }
 
     cancelCloseTimer();
     setIsToolbarVisible(true);
@@ -393,10 +411,12 @@ const PureToolbar = ({
   }, [setMessages, stop]);
 
   const artifactDefinition = artifactDefinitions.find(
-    (definition) => definition.kind === artifactKind,
+    (definition) => definition.kind === artifactKind
   );
 
-  if (!artifactDefinition) throw new Error("Artifact definition not found!");
+  if (!artifactDefinition) {
+    throw new Error("Artifact definition not found!");
+  }
 
   const toolsByArtifactKind = consoleError
     ? [
@@ -405,7 +425,9 @@ const PureToolbar = ({
       ]
     : artifactDefinition.toolbar;
 
-  if (toolsByArtifactKind.length === 0) return null;
+  if (toolsByArtifactKind.length === 0) {
+    return null;
+  }
 
   return (
     <TooltipProvider>
@@ -426,14 +448,14 @@ const PureToolbar = ({
             <TooltipTrigger
               render={
                 <MotionButton
-                  size="icon"
-                  variant="ghost"
                   animate={{ scale: 1.4 }}
+                  aria-label="Stop generating"
                   exit={{ scale: 1 }}
                   initial={{ scale: 1 }}
                   key="stop-icon"
                   onClick={handleStop}
-                  aria-label="Stop generating"
+                  size="icon"
+                  variant="ghost"
                 />
               }
             >
@@ -467,11 +489,21 @@ const PureToolbar = ({
 };
 
 export const Toolbar = memo(PureToolbar, (prevProps, nextProps) => {
-  if (prevProps.status !== nextProps.status) return false;
-  if (prevProps.isToolbarVisible !== nextProps.isToolbarVisible) return false;
-  if (prevProps.artifactKind !== nextProps.artifactKind) return false;
-  if (prevProps.consoleError !== nextProps.consoleError) return false;
-  if (prevProps.artifactActions !== nextProps.artifactActions) return false;
+  if (prevProps.status !== nextProps.status) {
+    return false;
+  }
+  if (prevProps.isToolbarVisible !== nextProps.isToolbarVisible) {
+    return false;
+  }
+  if (prevProps.artifactKind !== nextProps.artifactKind) {
+    return false;
+  }
+  if (prevProps.consoleError !== nextProps.consoleError) {
+    return false;
+  }
+  if (prevProps.artifactActions !== nextProps.artifactActions) {
+    return false;
+  }
 
   return true;
 });

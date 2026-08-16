@@ -1,10 +1,3 @@
-import { toast } from "@/components/ui/toast";
-import { Artifact } from "@/components/chat/create-artifact";
-import { DiffView } from "@/components/chat/diffview";
-import { DocumentSkeleton } from "@/components/chat/document-skeleton";
-import { Editor } from "@/components/chat/text-editor";
-import type { Suggestion } from "@/lib/db/schema";
-import { getSuggestions } from "../actions";
 import {
   Brush,
   Copy,
@@ -13,6 +6,13 @@ import {
   RotateCcwClock,
   RotateCw,
 } from "lucide-react";
+import { Artifact } from "@/components/chat/create-artifact";
+import { DiffView } from "@/components/chat/diffview";
+import { DocumentSkeleton } from "@/components/chat/document-skeleton";
+import { Editor } from "@/components/chat/text-editor";
+import { toast } from "@/components/ui/toast";
+import type { Suggestion } from "@/lib/db/schema";
+import { getSuggestions } from "../actions";
 
 type TextArtifactMetadata = {
   suggestions: Suggestion[];
@@ -67,7 +67,7 @@ export const textArtifact = new Artifact<"text", TextArtifactMetadata>({
       icon: <Copy />,
       onClick: ({ content }) => {
         navigator.clipboard.writeText(content);
-        toast.add({ type: "success", description: "Copied to clipboard!" });
+        toast.add({ description: "Copied to clipboard!", type: "success" });
       },
     },
   ],

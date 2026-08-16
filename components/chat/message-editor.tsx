@@ -17,7 +17,9 @@ export async function submitEditedMessage({
 
   setMessages((messages) => {
     const index = messages.findIndex((m) => m.id === message.id);
-    if (index === -1) return messages;
+    if (index === -1) {
+      return messages;
+    }
 
     return [
       ...messages.slice(0, index),

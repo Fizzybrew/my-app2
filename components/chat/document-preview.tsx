@@ -1,45 +1,47 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { memo, useCallback, useMemo, useRef } from "react";
 import useSWR from "swr";
 import { useArtifact } from "@/hooks/use-artifact";
 import type { Document } from "@/lib/db/schema";
 import { cn, fetcher } from "@/lib/utils";
 import type { ArtifactKind } from "./artifact";
-import dynamic from "next/dynamic";
+
 const CodeEditor = dynamic(
   () => import("./code-editor").then((mod) => mod.CodeEditor),
   {
-    ssr: false,
     loading: () => (
       <div className="flex size-full items-center justify-center">
         <Spinner />
       </div>
     ),
-  },
+    ssr: false,
+  }
 );
 
 const SpreadsheetEditor = dynamic(
   () =>
     import("@/components/chat/sheet-editor").then(
-      (mod) => mod.SpreadsheetEditor,
+      (mod) => mod.SpreadsheetEditor
     ),
   {
-    ssr: false,
     loading: () => (
       <div className="flex size-full items-center justify-center">
         <Spinner />
       </div>
     ),
-  },
+    ssr: false,
+  }
 );
+
+import { Code, File, Image, Loader, Maximize } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "../ui/spinner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { InlineDocumentSkeleton } from "./document-skeleton";
 import { ImageEditor } from "./image-editor";
 import { Editor } from "./text-editor";
-import { TooltipContent, TooltipTrigger, Tooltip } from "../ui/tooltip";
-import { Button } from "@/components/ui/button";
-import { Code, Loader, Image, Maximize, File } from "lucide-react";
-import { Spinner } from "../ui/spinner";
 
 type DocumentToolOutput = {
   id: string;
@@ -67,7 +69,7 @@ export function DocumentPreview({
     result
       ? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/document?id=${result.id}`
       : null,
-    fetcher,
+    fetcher
   );
 
   const previewDocument = useMemo(() => documents?.[0], [documents]);
@@ -76,7 +78,9 @@ export function DocumentPreview({
 
   const handleFullScreen = useCallback(() => {
     const boundingBox = containerRef.current?.getBoundingClientRect();
-    if (!boundingBox) return;
+    if (!boundingBox) {
+      return;
+    }
 
     setArtifact((currentArtifact) => ({
       ...currentArtifact,
@@ -140,14 +144,14 @@ export function DocumentPreview({
 
   return (
     <div
-      ref={containerRef}
       className="w-full h-61.25 rounded-3xl border border-border/50 overflow-hidden flex flex-col"
+      ref={containerRef}
     >
       <DocumentHeader
         isStreaming={artifact.status === "streaming"}
         kind={document.kind}
-        title={document.title}
         onFullScreen={handleFullScreen}
+        title={document.title}
       />
       <DocumentContent document={document} />
     </div>
@@ -205,11 +209,11 @@ const PureDocumentHeader = ({
     </div>
     <Tooltip>
       <TooltipTrigger
-        render={<Button variant="ghost" size="icon" onClick={onFullScreen} />}
+        render={<Button onClick={onFullScreen} size="icon" variant="ghost" />}
       >
         <Maximize />
       </TooltipTrigger>
-      <TooltipContent side="bottom" align="center">
+      <TooltipContent align="center" side="bottom">
         Open in full screen
       </TooltipContent>
     </Tooltip>
@@ -217,8 +221,12 @@ const PureDocumentHeader = ({
 );
 
 const DocumentHeader = memo(PureDocumentHeader, (prevProps, nextProps) => {
-  if (prevProps.title !== nextProps.title) return false;
-  if (prevProps.isStreaming !== nextProps.isStreaming) return false;
+  if (prevProps.title !== nextProps.title) {
+    return false;
+  }
+  if (prevProps.isStreaming !== nextProps.isStreaming) {
+    return false;
+  }
   return true;
 });
 
@@ -261,15 +269,15 @@ const DocumentContent = ({ document }: { document: Document }) => {
   });
 
   const commonProps = {
+    className: "size-full",
     content: document.content ?? "",
     currentVersionIndex: 0,
     isCurrentVersion: true,
+    isReadonly: true,
+    readOnly: true,
     saveContent: () => null,
     status: artifact.status,
     suggestions: [],
-    readOnly: true,
-    isReadonly: true,
-    className: "size-full",
   };
 
   const handleSaveContent = () => null;

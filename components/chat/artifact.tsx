@@ -1,6 +1,7 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { formatDistance } from "date-fns";
 import equal from "fast-deep-equal";
+import { Loader } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   type Dispatch,
@@ -25,7 +26,6 @@ import { ArtifactActions } from "./artifact-actions";
 import { ArtifactCloseButton } from "./artifact-close-button";
 import { Toolbar } from "./toolbar";
 import { VersionFooter } from "./version-footer";
-import { Loader } from "lucide-react";
 
 export const artifactDefinitions = [
   textArtifact,
@@ -64,7 +64,7 @@ function PureArtifact({
   setMessages,
   regenerate: _regenerate,
   votes: _votes,
-  isReadonly: isReadonly,
+  isReadonly,
   selectedModelId: _selectedModelId,
 }: {
   addToolApprovalResponse: UseChatHelpers<ChatMessage>["addToolApprovalResponse"];
@@ -93,7 +93,7 @@ function PureArtifact({
     artifact.documentId !== "init" && artifact.status !== "streaming"
       ? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/document?id=${artifact.documentId}`
       : null,
-    fetcher,
+    fetcher
   );
 
   const [mode, setMode] = useState<"edit" | "diff">("edit");
@@ -109,9 +109,13 @@ function PureArtifact({
       userScrolledArtifact.current = false;
       return;
     }
-    if (userScrolledArtifact.current) return;
+    if (userScrolledArtifact.current) {
+      return;
+    }
     const el = artifactContentRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     el.scrollTo({ top: el.scrollHeight });
   }, [artifact.status]);
 
@@ -140,12 +144,16 @@ function PureArtifact({
 
   const handleContentChange = useCallback(
     (updatedContent: string) => {
-      if (!artifact) return;
+      if (!artifact) {
+        return;
+      }
 
       mutate<Document[]>(
         `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/document?id=${artifact.documentId}`,
         async (currentDocuments) => {
-          if (!currentDocuments) return [];
+          if (!currentDocuments) {
+            return [];
+          }
 
           const currentDocument = currentDocuments.at(-1);
 
@@ -169,7 +177,7 @@ function PureArtifact({
                 title: artifact.title,
               }),
               method: "POST",
-            },
+            }
           );
 
           setIsContentDirty(false);
@@ -177,13 +185,13 @@ function PureArtifact({
           return currentDocuments.map((doc, i) =>
             i === currentDocuments.length - 1
               ? { ...doc, content: updatedContent }
-              : doc,
+              : doc
           );
         },
-        { revalidate: false },
+        { revalidate: false }
       );
     },
-    [artifact, mutate],
+    [artifact, mutate]
   );
 
   const latestContentRef = useRef<string>("");
@@ -208,33 +216,41 @@ function PureArtifact({
         handleContentChange(updatedContent);
       }
     },
-    [handleContentChange],
+    [handleContentChange]
   );
 
   const getDocumentContentById = useCallback(
     (index: number) => {
-      if (!documents) return "";
-      if (!documents[index]) return "";
+      if (!documents) {
+        return "";
+      }
+      if (!documents[index]) {
+        return "";
+      }
       return documents[index].content ?? "";
     },
-    [documents],
+    [documents]
   );
 
   const handleVersionChange = useCallback(
     (type: "next" | "prev" | "toggle" | "latest") => {
-      if (!documents) return;
+      if (!documents) {
+        return;
+      }
 
       if (type === "latest") {
         setCurrentVersionIndex(documents.length - 1);
         setMode("edit");
       }
 
-      if (type === "toggle")
+      if (type === "toggle") {
         setMode((currentMode) => (currentMode === "edit" ? "diff" : "edit"));
+      }
 
       if (type === "prev") {
-        if (currentVersionIndex > 0)
+        if (currentVersionIndex > 0) {
           setCurrentVersionIndex((index) => index - 1);
+        }
       } else if (
         type === "next" &&
         currentVersionIndex < documents.length - 1
@@ -242,12 +258,14 @@ function PureArtifact({
         setCurrentVersionIndex((index) => index + 1);
       }
     },
-    [currentVersionIndex, documents],
+    [currentVersionIndex, documents]
   );
 
   const handleArtifactScroll = useCallback(() => {
     const el = artifactContentRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
     userScrolledArtifact.current = !atBottom;
   }, []);
@@ -263,10 +281,12 @@ function PureArtifact({
   const isMobile = windowWidth ? windowWidth < 768 : false;
 
   const artifactDefinition = artifactDefinitions.find(
-    (definition) => definition.kind === artifact.kind,
+    (definition) => definition.kind === artifact.kind
   );
 
-  if (!artifactDefinition) throw new Error("Artifact definition not found!");
+  if (!artifactDefinition) {
+    throw new Error("Artifact definition not found!");
+  }
 
   useEffect(() => {
     if (artifact.documentId !== "init" && artifactDefinition.initialize) {
@@ -291,7 +311,7 @@ function PureArtifact({
     metadata?.outputs
       ?.filter((o: { status: string }) => o.status === "failed")
       .flatMap((o: { contents: { type: string; value: string }[] }) =>
-        o.contents.filter((c) => c.type === "text").map((c) => c.value),
+        o.contents.filter((c) => c.type === "text").map((c) => c.value)
       )
       .join("\n") || undefined;
 
@@ -439,10 +459,18 @@ function PureArtifact({
 }
 
 export const Artifact = memo(PureArtifact, (prevProps, nextProps) => {
-  if (prevProps.status !== nextProps.status) return false;
-  if (!equal(prevProps.votes, nextProps.votes)) return false;
-  if (prevProps.input !== nextProps.input) return false;
-  if (prevProps.messages.length !== nextProps.messages.length) return false;
+  if (prevProps.status !== nextProps.status) {
+    return false;
+  }
+  if (!equal(prevProps.votes, nextProps.votes)) {
+    return false;
+  }
+  if (prevProps.input !== nextProps.input) {
+    return false;
+  }
+  if (prevProps.messages.length !== nextProps.messages.length) {
+    return false;
+  }
 
   return true;
 });

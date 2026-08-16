@@ -16,7 +16,7 @@ export default function Page() {
 
   const [state, formAction] = useActionState<RegisterActionState, FormData>(
     register,
-    { status: "idle" },
+    { status: "idle" }
   );
 
   const { update: updateSession } = useSession();
@@ -24,16 +24,16 @@ export default function Page() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: router and updateSession are stable refs
   useEffect(() => {
     if (state.status === "user_exists") {
-      toast.add({ type: "error", description: "Account already exists!" });
+      toast.add({ description: "Account already exists!", type: "error" });
     } else if (state.status === "failed") {
-      toast.add({ type: "error", description: "Failed to create account!" });
+      toast.add({ description: "Failed to create account!", type: "error" });
     } else if (state.status === "invalid_data") {
       toast.add({
-        type: "error",
         description: "Failed validating your submission!",
+        type: "error",
       });
     } else if (state.status === "success") {
-      toast.add({ type: "success", description: "Account created!" });
+      toast.add({ description: "Account created!", type: "success" });
       setIsSuccessful(true);
       updateSession();
       router.refresh();

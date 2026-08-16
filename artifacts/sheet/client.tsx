@@ -1,22 +1,23 @@
-import { parse, unparse } from "papaparse";
-import { toast } from "@/components/ui/toast";
-import { Artifact } from "@/components/chat/create-artifact";
-import dynamic from "next/dynamic";
 import { ChartLine, Copy, RotateCcw, RotateCw, Sparkles } from "lucide-react";
+import dynamic from "next/dynamic";
+import { parse, unparse } from "papaparse";
+import { Artifact } from "@/components/chat/create-artifact";
 import { Spinner } from "@/components/ui/spinner";
+import { toast } from "@/components/ui/toast";
+
 const SpreadsheetEditor = dynamic(
   () =>
     import("@/components/chat/sheet-editor").then(
-      (mod) => mod.SpreadsheetEditor,
+      (mod) => mod.SpreadsheetEditor
     ),
   {
-    ssr: false,
     loading: () => (
       <div className="flex h-full w-full items-center justify-center">
         <Spinner />
       </div>
     ),
-  },
+    ssr: false,
+  }
 );
 
 type Metadata = Record<string, never>;
@@ -58,13 +59,13 @@ export const sheetArtifact = new Artifact<"sheet", Metadata>({
         const parsed = parse<string[]>(content, { skipEmptyLines: true });
 
         const nonEmptyRows = parsed.data.filter((row) =>
-          row.some((cell) => cell.trim() !== ""),
+          row.some((cell) => cell.trim() !== "")
         );
 
         const cleanedCsv = unparse(nonEmptyRows);
 
         navigator.clipboard.writeText(cleanedCsv);
-        toast.add({ type: "success", description: "Copied csv to clipboard!" });
+        toast.add({ description: "Copied csv to clipboard!", type: "success" });
       },
     },
   ],

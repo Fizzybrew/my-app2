@@ -1,30 +1,30 @@
 "use client";
 
+import { Ellipsis, Forward, Pencil, Pin, PinOff, Trash } from "lucide-react";
 import Link from "next/link";
-import { memo, useCallback, useState, useRef, useEffect } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import type { Chat } from "@/lib/db/schema";
+import { Button } from "../ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { Input } from "../ui/input";
 import {
   SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "../ui/sidebar";
-import { Trash, Pin, PinOff, Pencil, Ellipsis, Forward } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "../ui/dialog";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
 
 const PureChatItem = ({
   chat,
@@ -89,7 +89,7 @@ const PureChatItem = ({
         cancelEditing();
       }
     },
-    [saveEditing, cancelEditing],
+    [saveEditing, cancelEditing]
   );
 
   useEffect(() => {
@@ -115,21 +115,21 @@ const PureChatItem = ({
     <>
       <SidebarMenuItem>
         <SidebarMenuButton
+          isActive={isActive}
           render={
             isEditing ? (
               <input
+                className="h-8 w-full bg-transparent"
+                onBlur={saveEditing}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={handleKeyDown}
                 ref={inputRef}
                 value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                onBlur={saveEditing}
-                onKeyDown={handleKeyDown}
-                className="h-8 w-full bg-transparent"
               />
             ) : (
               <Link href={`/chat/${chat.id}`} onClick={closeMobile} />
             )
           }
-          isActive={isActive}
         >
           {!isEditing && (
             <div className="flex items-center gap-1 truncate">
@@ -170,7 +170,7 @@ const PureChatItem = ({
         </DropdownMenu>
       </SidebarMenuItem>
 
-      <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+      <Dialog onOpenChange={setShareOpen} open={shareOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Share chat link</DialogTitle>
@@ -179,9 +179,9 @@ const PureChatItem = ({
               any confidential or personal information.
             </DialogDescription>
           </DialogHeader>
-          <Input readOnly value={shareUrl} className="w-full" />
+          <Input className="w-full" readOnly value={shareUrl} />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShareOpen(false)}>
+            <Button onClick={() => setShareOpen(false)} variant="outline">
               Close
             </Button>
             <Button onClick={handleCopy}>{copied ? "Copied!" : "Copy"}</Button>
@@ -192,6 +192,7 @@ const PureChatItem = ({
   );
 };
 
-export const ChatItem = memo(PureChatItem, (prevProps, nextProps) => {
-  return prevProps.isActive === nextProps.isActive;
-});
+export const ChatItem = memo(
+  PureChatItem,
+  (prevProps, nextProps) => prevProps.isActive === nextProps.isActive
+);

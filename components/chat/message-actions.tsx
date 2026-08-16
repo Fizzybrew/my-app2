@@ -1,15 +1,15 @@
 import equal from "fast-deep-equal";
+import { Copy, Pencil, RefreshCw, ThumbsDown, ThumbsUp } from "lucide-react";
 import { memo, useCallback } from "react";
-import { toast } from "@/components/ui/toast";
 import { useSWRConfig } from "swr";
 import { useCopyToClipboard } from "usehooks-ts";
+import { toast } from "@/components/ui/toast";
 import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
 import {
   MessageAction as Action,
   MessageActions as Actions,
 } from "../ai-elements/message";
-import { Copy, Pencil, RefreshCw, ThumbsDown, ThumbsUp } from "lucide-react";
 
 export function PureMessageActions({
   chatId,
@@ -37,12 +37,12 @@ export function PureMessageActions({
 
   const handleCopy = useCallback(async () => {
     if (!textFromParts) {
-      toast.add({ type: "error", description: "There's no text to copy!" });
+      toast.add({ description: "There's no text to copy!", type: "error" });
       return;
     }
 
     await copyToClipboard(textFromParts);
-    toast.add({ type: "success", description: "Copied to clipboard!" });
+    toast.add({ description: "Copied to clipboard!", type: "success" });
   }, [copyToClipboard, textFromParts]);
 
   const handleUpvote = useCallback(() => {
@@ -55,7 +55,7 @@ export function PureMessageActions({
           type: "up",
         }),
         method: "PATCH",
-      },
+      }
     );
 
     toast.promise(upvote, {
@@ -70,7 +70,7 @@ export function PureMessageActions({
             }
 
             const votesWithoutCurrent = currentVotes.filter(
-              (currentVote) => currentVote.messageId !== message.id,
+              (currentVote) => currentVote.messageId !== message.id
             );
 
             return [
@@ -82,7 +82,7 @@ export function PureMessageActions({
               },
             ];
           },
-          { revalidate: false },
+          { revalidate: false }
         );
 
         return "Upvoted Response!";
@@ -100,7 +100,7 @@ export function PureMessageActions({
           type: "down",
         }),
         method: "PATCH",
-      },
+      }
     );
 
     toast.promise(downvote, {
@@ -110,10 +110,12 @@ export function PureMessageActions({
         mutate<Vote[]>(
           `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/vote?chatId=${chatId}`,
           (currentVotes) => {
-            if (!currentVotes) return [];
+            if (!currentVotes) {
+              return [];
+            }
 
             const votesWithoutCurrent = currentVotes.filter(
-              (currentVote) => currentVote.messageId !== message.id,
+              (currentVote) => currentVote.messageId !== message.id
             );
 
             return [
@@ -125,7 +127,7 @@ export function PureMessageActions({
               },
             ];
           },
-          { revalidate: false },
+          { revalidate: false }
         );
 
         return "Downvoted Response!";
@@ -133,7 +135,9 @@ export function PureMessageActions({
     });
   }, [chatId, message.id, mutate]);
 
-  if (isLoading) return null;
+  if (isLoading) {
+    return null;
+  }
 
   if (message.role === "user") {
     return (
@@ -141,16 +145,16 @@ export function PureMessageActions({
         <div className="flex items-center gap-0.5">
           {onEdit ? (
             <Action
-              variant="ghost"
+              aria-label="Edit message"
               data-testid="message-edit-button"
               onClick={onEdit}
               tooltip="Edit"
-              aria-label="Edit message"
+              variant="ghost"
             >
               <Pencil />
             </Action>
           ) : null}
-          <Action variant="ghost" onClick={handleCopy} tooltip="Copy">
+          <Action onClick={handleCopy} tooltip="Copy" variant="ghost">
             <Copy />
           </Action>
         </div>
@@ -164,41 +168,41 @@ export function PureMessageActions({
   return (
     <Actions className="opacity-0 transition-opacity duration-150 pointer-coarse:opacity-100 [@media(hover:hover)]:group-hover/message:opacity-100">
       <Action
-        variant="ghost"
+        aria-label="Copy message"
         onClick={handleCopy}
         tooltip="Copy"
-        aria-label="Copy message"
+        variant="ghost"
       >
         <Copy />
       </Action>
 
       <Action
-        variant="ghost"
+        aria-label="Upvote response"
         data-testid="message-upvote"
         disabled={isUpvoteDisabled}
         onClick={handleUpvote}
         tooltip={isUpvoteDisabled ? undefined : "Upvote Response"}
-        aria-label="Upvote response"
+        variant="ghost"
       >
         <ThumbsUp />
       </Action>
       <Action
-        variant="ghost"
+        aria-label="Downvote response"
         data-testid="message-downvote"
         disabled={isDownvoteDisabled}
         onClick={handleDownvote}
         tooltip={isDownvoteDisabled ? undefined : "Downvote Response"}
-        aria-label="Downvote response"
+        variant="ghost"
       >
         <ThumbsDown />
       </Action>
       {onRegenerate && (
         <Action
-          variant="ghost"
+          aria-label="Regenerate response"
           data-testid="message-regenerate"
           onClick={onRegenerate}
           tooltip="Regenerate Response"
-          aria-label="Regenerate response"
+          variant="ghost"
         >
           <RefreshCw />
         </Action>
@@ -210,9 +214,15 @@ export function PureMessageActions({
 export const MessageActions = memo(
   PureMessageActions,
   (prevProps, nextProps) => {
-    if (!equal(prevProps.vote, nextProps.vote)) return false;
-    if (prevProps.isLoading !== nextProps.isLoading) return false;
-    if (prevProps.onRegenerate !== nextProps.onRegenerate) return false;
+    if (!equal(prevProps.vote, nextProps.vote)) {
+      return false;
+    }
+    if (prevProps.isLoading !== nextProps.isLoading) {
+      return false;
+    }
+    if (prevProps.onRegenerate !== nextProps.onRegenerate) {
+      return false;
+    }
     return true;
-  },
+  }
 );

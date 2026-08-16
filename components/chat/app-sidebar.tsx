@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { User } from "next-auth";
 import { useCallback, useState } from "react";
-import { toast } from "@/components/ui/toast";
 import { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
 import {
@@ -25,6 +24,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { toast } from "@/components/ui/toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -70,7 +70,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
       method: "DELETE",
     });
 
-    toast.add({ type: "success", description: "All chats deleted" });
+    toast.add({ description: "All chats deleted", type: "success" });
   }, [mutate, router]);
 
   return (
@@ -80,17 +80,17 @@ export function AppSidebar({ user }: { user: User | undefined }) {
           <SidebarMenu>
             <SidebarMenuItem className="flex justify-between group/logo">
               <SidebarMenuButton
-                className="group-data-[collapsible=icon]:group-hover/logo:opacity-0 w-fit"
                 aria-label="Home"
+                className="group-data-[collapsible=icon]:group-hover/logo:opacity-0 w-fit"
                 render={<Link href="/" onClick={closeMobile} />}
               >
                 <Ghost />
               </SidebarMenuButton>
 
               <SidebarMenuButton
+                aria-label="Open sidebar"
                 className="pointer-events-none absolute inset-0 opacity-0 group-data-[collapsible=icon]:pointer-events-auto group-data-[collapsible=icon]:group-hover/logo:opacity-100"
                 onClick={handleToggleSidebar}
-                aria-label="Open sidebar"
                 tooltip="Open sidebar"
               >
                 <PanelLeftIcon />
@@ -98,12 +98,12 @@ export function AppSidebar({ user }: { user: User | undefined }) {
 
               <div className="group-data-[collapsible=icon]:hidden">
                 <SidebarMenuButton
+                  aria-label="Close sidebar"
+                  onClick={handleToggleSidebar}
                   tooltip={{
                     children: "Close sidebar",
                     hidden: false,
                   }}
-                  onClick={handleToggleSidebar}
-                  aria-label="Close sidebar"
                 >
                   <PanelLeftIcon />
                 </SidebarMenuButton>

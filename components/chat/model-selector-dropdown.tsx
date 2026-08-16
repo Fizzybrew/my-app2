@@ -1,7 +1,8 @@
 "use client";
 
+import { BrainIcon, EyeIcon, LockIcon, WrenchIcon } from "lucide-react";
+import { type ReactNode, useCallback } from "react";
 import useSWR from "swr";
-import { cn } from "@/lib/utils";
 import {
   ModelSelectorContent,
   ModelSelectorGroup,
@@ -22,8 +23,7 @@ import {
   DEFAULT_CHAT_MODEL,
   type ModelCapabilities,
 } from "@/lib/ai/models";
-import { BrainIcon, EyeIcon, LockIcon, WrenchIcon } from "lucide-react";
-import { useCallback, type ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 function setCookie(name: string, value: string) {
   const maxAge = 60 * 60 * 24 * 365;
@@ -47,7 +47,9 @@ function ModelSelectorOption({
 }) {
   const [logoProvider] = model.id.split("/");
   const maybeWithTooltip = (icon: ReactNode, label: string) => {
-    if (!curated) return icon;
+    if (!curated) {
+      return icon;
+    }
     return (
       <Tooltip>
         <TooltipTrigger render={<span className="inline-flex" />}>
@@ -59,7 +61,9 @@ function ModelSelectorOption({
   };
 
   const handleSelect = useCallback(() => {
-    if (!curated) return;
+    if (!curated) {
+      return;
+    }
     onModelChange?.(model.id);
     setCookie("chat-model", model.id);
     setOpen(false);
@@ -77,7 +81,7 @@ function ModelSelectorOption({
         "flex w-full transition-colors",
         curated
           ? "data-[selected=true]:bg-muted data-[selected=true]:text-foreground"
-          : "cursor-not-allowed opacity-40 data-[selected=true]:bg-transparent data-[selected=true]:opacity-60 data-[selected=true]:ring-1 data-[selected=true]:ring-muted-foreground/30 data-[selected=true]:ring-inset",
+          : "cursor-not-allowed opacity-40 data-[selected=true]:bg-transparent data-[selected=true]:opacity-60 data-[selected=true]:ring-1 data-[selected=true]:ring-muted-foreground/30 data-[selected=true]:ring-inset"
       )}
       onSelect={handleSelect}
       value={model.id}
@@ -96,7 +100,9 @@ function ModelSelectorOption({
     </ModelSelectorItem>
   );
 
-  if (curated) return option;
+  if (curated) {
+    return option;
+  }
   return (
     <Tooltip>
       <TooltipTrigger render={<div className="w-full cursor-not-allowed" />}>
@@ -121,7 +127,7 @@ export function ModelSelectorDropdown({
   const { data: modelsData } = useSWR(
     `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/models`,
     (url: string) => fetch(url).then((r) => r.json()),
-    { dedupingInterval: 3_600_000, revalidateOnFocus: false },
+    { dedupingInterval: 3_600_000, revalidateOnFocus: false }
   );
 
   const capabilities: Record<string, ModelCapabilities> | undefined =
@@ -155,13 +161,19 @@ export function ModelSelectorDropdown({
             const key = curatedIds.has(model.id)
               ? "_available"
               : model.provider;
-            if (!grouped[key]) grouped[key] = [];
+            if (!grouped[key]) {
+              grouped[key] = [];
+            }
             grouped[key].push({ curated: curatedIds.has(model.id), model });
           }
 
           const sortedKeys = Object.keys(grouped).sort((a, b) => {
-            if (a === "_available") return -1;
-            if (b === "_available") return 1;
+            if (a === "_available") {
+              return -1;
+            }
+            if (b === "_available") {
+              return 1;
+            }
             return a.localeCompare(b);
           });
 

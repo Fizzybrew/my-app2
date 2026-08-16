@@ -157,7 +157,7 @@ export async function getChatsByUserId({
         .where(
           whereCondition
             ? and(whereCondition, eq(chat.userId, id))
-            : eq(chat.userId, id),
+            : eq(chat.userId, id)
         )
         .orderBy(desc(chat.createdAt))
         .limit(extendedLimit);
@@ -174,7 +174,7 @@ export async function getChatsByUserId({
       if (!selectedChat) {
         throw new ChatbotError(
           "not_found:database",
-          `Chat with id ${startingAfter} not found`,
+          `Chat with id ${startingAfter} not found`
         );
       }
 
@@ -189,7 +189,7 @@ export async function getChatsByUserId({
       if (!selectedChat) {
         throw new ChatbotError(
           "not_found:database",
-          `Chat with id ${endingBefore} not found`,
+          `Chat with id ${endingBefore} not found`
         );
       }
 
@@ -411,8 +411,8 @@ export async function deleteDocumentsByIdAfterTimestamp({
       .where(
         and(
           eq(suggestion.documentId, id),
-          gt(suggestion.documentCreatedAt, timestamp),
-        ),
+          gt(suggestion.documentCreatedAt, timestamp)
+        )
       );
 
     return await db
@@ -471,24 +471,24 @@ export async function deleteMessagesByChatIdAfterTimestamp({
       .select({ id: message.id })
       .from(message)
       .where(
-        and(eq(message.chatId, chatId), gte(message.createdAt, timestamp)),
+        and(eq(message.chatId, chatId), gte(message.createdAt, timestamp))
       );
 
     const messageIds = messagesToDelete.map(
-      (currentMessage) => currentMessage.id,
+      (currentMessage) => currentMessage.id
     );
 
     if (messageIds.length > 0) {
       await db
         .delete(vote)
         .where(
-          and(eq(vote.chatId, chatId), inArray(vote.messageId, messageIds)),
+          and(eq(vote.chatId, chatId), inArray(vote.messageId, messageIds))
         );
 
       return await db
         .delete(message)
         .where(
-          and(eq(message.chatId, chatId), inArray(message.id, messageIds)),
+          and(eq(message.chatId, chatId), inArray(message.id, messageIds))
         );
     }
   } catch (error) {
@@ -519,7 +519,7 @@ export async function getMessageCountByUserId({
 }) {
   try {
     const cutoffTime = new Date(
-      Date.now() - differenceInHours * 60 * 60 * 1000,
+      Date.now() - differenceInHours * 60 * 60 * 1000
     );
 
     const [stats] = await db
@@ -530,8 +530,8 @@ export async function getMessageCountByUserId({
         and(
           eq(chat.userId, id),
           gte(message.createdAt, cutoffTime),
-          eq(message.role, "user"),
-        ),
+          eq(message.role, "user")
+        )
       )
       .execute();
 

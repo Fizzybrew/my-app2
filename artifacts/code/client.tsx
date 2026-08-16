@@ -1,43 +1,32 @@
-import { useCallback, useEffect, useState } from "react";
-import { toast } from "@/components/ui/toast";
 import dynamic from "next/dynamic";
+import { useCallback, useEffect, useState } from "react";
 import { Spinner } from "@/components/ui/spinner";
+import { toast } from "@/components/ui/toast";
 
 const CodeEditor = dynamic(
   () => import("@/components/chat/code-editor").then((mod) => mod.CodeEditor),
   {
-    ssr: false,
     loading: () => (
       <div className="flex size-full items-center justify-center">
         <Spinner />
       </div>
     ),
-  },
+    ssr: false,
+  }
 );
 
 const Console = dynamic(
   () => import("@/components/chat/console").then((mod) => mod.Console),
   {
-    ssr: false,
     loading: () => (
       <div className="flex size-full items-center justify-center">
         <Spinner />
       </div>
     ),
-  },
+    ssr: false,
+  }
 );
 
-import {
-  type ConsoleOutput,
-  type ConsoleOutputContent,
-} from "@/components/chat/console";
-import { Artifact } from "@/components/chat/create-artifact";
-import { generateUUID } from "@/lib/utils";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
 import {
   Copy,
   Logs,
@@ -46,6 +35,17 @@ import {
   RotateCcw,
   RotateCw,
 } from "lucide-react";
+import type {
+  ConsoleOutput,
+  ConsoleOutputContent,
+} from "@/components/chat/console";
+import { Artifact } from "@/components/chat/create-artifact";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import { generateUUID } from "@/lib/utils";
 
 const OUTPUT_HANDLERS = {
   basic: `
@@ -120,8 +120,8 @@ const codeArtifactContent: Artifact<"code", Metadata>["content"] =
 
     return (
       <div className="flex size-full flex-col">
-        <ResizablePanelGroup orientation="vertical" className="h-full">
-          <ResizablePanel defaultSize={50} className="relative">
+        <ResizablePanelGroup className="h-full" orientation="vertical">
+          <ResizablePanel className="relative" defaultSize={50}>
             <div className="absolute inset-0">
               <CodeEditor {...props} />
             </div>
@@ -134,8 +134,8 @@ const codeArtifactContent: Artifact<"code", Metadata>["content"] =
                 {metadata?.outputs ? (
                   <Console
                     consoleOutputs={metadata.outputs}
-                    setConsoleOutputs={clearConsoleOutputs}
                     onClose={handleCloseConsole}
+                    setConsoleOutputs={clearConsoleOutputs}
                   />
                 ) : null}
               </ResizablePanel>
@@ -211,16 +211,16 @@ export const codeArtifact = new Artifact<"code", Metadata>({
               }
 
               await currentPyodideInstance.runPythonAsync(
-                OUTPUT_HANDLERS[handler as keyof typeof OUTPUT_HANDLERS],
+                OUTPUT_HANDLERS[handler as keyof typeof OUTPUT_HANDLERS]
               );
 
               if (handler === "matplotlib") {
                 await currentPyodideInstance.runPythonAsync(
-                  "setup_matplotlib_output()",
+                  "setup_matplotlib_output()"
                 );
               }
             },
-            Promise.resolve(),
+            Promise.resolve()
           );
 
           await currentPyodideInstance.runPythonAsync(content);
@@ -290,7 +290,7 @@ export const codeArtifact = new Artifact<"code", Metadata>({
       icon: <Copy />,
       onClick: ({ content }) => {
         navigator.clipboard.writeText(content);
-        toast.add({ type: "success", description: "Copied to clipboard!" });
+        toast.add({ description: "Copied to clipboard!", type: "success" });
       },
     },
   ],

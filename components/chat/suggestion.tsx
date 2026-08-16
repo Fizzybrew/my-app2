@@ -16,9 +16,11 @@ export const SuggestionDialog = ({
 }) => {
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+      }
     },
-    [onClose],
+    [onClose]
   );
 
   return (

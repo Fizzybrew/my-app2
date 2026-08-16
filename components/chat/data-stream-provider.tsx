@@ -24,13 +24,13 @@ export function DataStreamProvider({
   children: React.ReactNode;
 }) {
   const [dataStream, setDataStream] = useState<DataUIPart<CustomUIDataTypes>[]>(
-    [],
+    []
   );
   const [waitingStatus, setWaitingStatus] = useState<WaitingStatusData>();
 
   const value = useMemo(
     () => ({ dataStream, setDataStream, setWaitingStatus, waitingStatus }),
-    [dataStream, waitingStatus],
+    [dataStream, waitingStatus]
   );
 
   return (
@@ -42,7 +42,8 @@ export function DataStreamProvider({
 
 export function useDataStream() {
   const context = useContext(DataStreamContext);
-  if (!context)
+  if (!context) {
     throw new Error("useDataStream must be used within a DataStreamProvider");
+  }
   return context;
 }

@@ -19,8 +19,8 @@ export function ImageEditor({
   return (
     <div
       className={cn("flex w-full flex-row items-center justify-center", {
-        "h-50": isInline,
         "h-[calc(100dvh-60px)]": !isInline,
+        "h-50": isInline,
       })}
     >
       {status === "streaming" ? (

@@ -2,11 +2,11 @@ import { tool } from "ai";
 import { z } from "zod";
 
 async function geocodeCity(
-  city: string,
+  city: string
 ): Promise<{ latitude: number; longitude: number } | null> {
   try {
     const response = await fetch(
-      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`,
+      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`
     );
 
     if (!response.ok) {
@@ -32,7 +32,6 @@ async function geocodeCity(
 export const getWeather = tool({
   description:
     "Get the current weather at a location. You can provide either coordinates or a city name.",
-  needsApproval: true,
   execute: async (input) => {
     let latitude: number;
     let longitude: number;
@@ -57,7 +56,7 @@ export const getWeather = tool({
     }
 
     const response = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m&hourly=temperature_2m&daily=sunrise,sunset&timezone=auto`,
+      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m&hourly=temperature_2m&daily=sunrise,sunset&timezone=auto`
     );
 
     const weatherData = await response.json();
@@ -76,4 +75,5 @@ export const getWeather = tool({
     latitude: z.number().optional(),
     longitude: z.number().optional(),
   }),
+  needsApproval: true,
 });

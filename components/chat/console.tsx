@@ -5,18 +5,18 @@ import {
   useEffect,
   useMemo,
 } from "react";
-import { useArtifactSelector } from "@/hooks/use-artifact";
 import {
   Terminal,
-  TerminalHeader,
-  TerminalTitle,
-  TerminalStatus,
   TerminalActions,
-  TerminalCopyButton,
   TerminalClearButton,
-  TerminalContent,
   TerminalCloseButton,
+  TerminalContent,
+  TerminalCopyButton,
+  TerminalHeader,
+  TerminalStatus,
+  TerminalTitle,
 } from "@/components/ai-elements/terminal";
+import { useArtifactSelector } from "@/hooks/use-artifact";
 
 export type ConsoleOutputContent = {
   type: "text" | "image";
@@ -47,41 +47,47 @@ export function Console({
   }, [setConsoleOutputs]);
 
   useEffect(() => {
-    if (!isArtifactVisible) setConsoleOutputs([]);
+    if (!isArtifactVisible) {
+      setConsoleOutputs([]);
+    }
   }, [isArtifactVisible, setConsoleOutputs]);
 
-  const output = useMemo(() => {
-    return [...consoleOutputs]
-      .map((out, index) => {
-        const prefix = `[${index + 1}]`;
+  const output = useMemo(
+    () =>
+      [...consoleOutputs]
+        .map((out, index) => {
+          const prefix = `[${index + 1}]`;
 
-        if (out.status === "in_progress") return "";
-        if (out.status === "loading_packages") {
+          if (out.status === "in_progress") {
+            return "";
+          }
+          if (out.status === "loading_packages") {
+            const textParts = out.contents
+              .filter((c) => c.type === "text")
+              .map((c) => c.value);
+            return `${prefix} ${textParts.join("")}`;
+          }
+
           const textParts = out.contents
             .filter((c) => c.type === "text")
             .map((c) => c.value);
-          return `${prefix} ${textParts.join("")}`;
-        }
-
-        const textParts = out.contents
-          .filter((c) => c.type === "text")
-          .map((c) => c.value);
-        return `${prefix} ${textParts.join("\n")}`;
-      })
-      .join("\n");
-  }, [consoleOutputs]);
+          return `${prefix} ${textParts.join("\n")}`;
+        })
+        .join("\n"),
+    [consoleOutputs]
+  );
 
   const isStreaming = consoleOutputs.some(
-    (out) => out.status === "in_progress" || out.status === "loading_packages",
+    (out) => out.status === "in_progress" || out.status === "loading_packages"
   );
 
   return (
     <Terminal
-      output={output}
+      className="size-full"
       isStreaming={isStreaming}
       onClear={handleClear}
       onClose={onClose}
-      className="size-full"
+      output={output}
     >
       <TerminalHeader>
         <TerminalTitle>

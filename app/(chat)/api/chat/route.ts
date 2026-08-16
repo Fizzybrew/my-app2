@@ -35,9 +35,9 @@ import {
   getMessagesByChatId,
   saveChat,
   saveMessages,
+  updateChatPinnedById,
   updateChatTitleById,
   updateMessage,
-  updateChatPinnedById,
 } from "@/lib/db/queries";
 import type { DBMessage } from "@/lib/db/schema";
 import { ChatbotError } from "@/lib/errors";
@@ -51,7 +51,7 @@ export const maxDuration = 60;
 
 function isModelStreamActivity(chunk: { type: string }) {
   return !["start", "start-step", "finish-step", "finish", "raw"].includes(
-    chunk.type,
+    chunk.type
   );
 }
 
@@ -144,13 +144,13 @@ export async function POST(request: Request) {
               ?.filter(
                 (p: Record<string, unknown>) =>
                   p.state === "approval-responded" ||
-                  p.state === "output-denied",
+                  p.state === "output-denied"
               )
               .map((p: Record<string, unknown>) => [
                 String(p.toolCallId ?? ""),
                 p,
-              ]) ?? [],
-        ),
+              ]) ?? []
+        )
       );
       uiMessages = dbMessages.map((msg) => ({
         ...msg,
@@ -198,13 +198,13 @@ export async function POST(request: Request) {
     const hasImages = uiMessages.some((msg) =>
       msg.parts?.some(
         (part: any) =>
-          part.type === "file" && part.mediaType?.startsWith("image/"),
-      ),
+          part.type === "file" && part.mediaType?.startsWith("image/")
+      )
     );
 
     if (hasImages && !supportsVision) {
       return new ChatbotError(
-        "bad_request:model_does_not_support_images",
+        "bad_request:model_does_not_support_images"
       ).toResponse();
     }
 
@@ -218,7 +218,7 @@ export async function POST(request: Request) {
 
         const writeWaitingStatus = (
           phase: WaitingStatusData["phase"],
-          messageText: string,
+          messageText: string
         ) => {
           if (hasModelActivity && phase !== "thinking") {
             return;
@@ -238,7 +238,9 @@ export async function POST(request: Request) {
         writeWaitingStatus("waiting", "Waiting...");
 
         const markModelActive = () => {
-          if (hasModelActivity) return;
+          if (hasModelActivity) {
+            return;
+          }
           hasModelActivity = true;
           writeWaitingStatus("thinking", "Thinking...");
         };
@@ -305,7 +307,7 @@ export async function POST(request: Request) {
           toUIMessageStream({
             sendReasoning: isReasoningModel,
             stream: result.stream,
-          }),
+          })
         );
 
         if (titlePromise) {
@@ -324,7 +326,7 @@ export async function POST(request: Request) {
           await Promise.all(
             finishedMessages.map(async (finishedMsg) => {
               const existingMsg = uiMessages.find(
-                (m) => m.id === finishedMsg.id,
+                (m) => m.id === finishedMsg.id
               );
               if (existingMsg) {
                 await updateMessage({
@@ -346,7 +348,7 @@ export async function POST(request: Request) {
                   },
                 ],
               });
-            }),
+            })
           );
         } else if (finishedMessages.length > 0) {
           await saveMessages({
@@ -380,7 +382,7 @@ export async function POST(request: Request) {
             await createStreamId({ chatId: id, streamId });
             await streamContext.createNewResumableStream(
               streamId,
-              () => sseStream,
+              () => sseStream
             );
           }
         } catch {
@@ -455,7 +457,7 @@ export async function PATCH(request: Request) {
     if (typeof pinned !== "boolean") {
       return new ChatbotError(
         "bad_request:api",
-        "Invalid pinned value",
+        "Invalid pinned value"
       ).toResponse();
     }
     await updateChatPinnedById({ chatId: id, pinned });

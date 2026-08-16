@@ -1,6 +1,6 @@
 "use client";
 
-import { Ellipsis, LogIn, LogOut, Settings, UserRound } from "lucide-react";
+import { LogIn, LogOut, Settings, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { User } from "next-auth";
 import { signOut, useSession } from "next-auth/react";
@@ -16,9 +16,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { guestRegex } from "@/lib/constants";
 import { toast } from "@/components/ui/toast";
-import { Skeleton } from "../ui/skeleton";
+import { guestRegex } from "@/lib/constants";
 
 export function SidebarUserNav({ user }: { user: User }) {
   const router = useRouter();
@@ -29,8 +28,8 @@ export function SidebarUserNav({ user }: { user: User }) {
   const handleAuthClick = useCallback(() => {
     if (status === "loading") {
       toast.add({
-        type: "error",
         title: "Checking authentication status, please try again!",
+        type: "error",
       });
       return;
     }
@@ -58,7 +57,7 @@ export function SidebarUserNav({ user }: { user: User }) {
                 </SidebarMenuButton>
               )
             }
-          ></DropdownMenuTrigger>
+          />
           <DropdownMenuContent data-testid="user-nav-menu" side="top">
             <DropdownMenuItem>
               <Settings />

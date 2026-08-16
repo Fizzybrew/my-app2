@@ -1,11 +1,11 @@
-import { customProvider } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
+import { customProvider } from "ai";
 import { isTestEnvironment } from "../constants";
 import { titleModel } from "./models";
 
 const routerai = createOpenAI({
-  baseURL: process.env.ROUTERAI_BASE_URL,
   apiKey: process.env.ROUTERAI_API_KEY,
+  baseURL: process.env.ROUTERAI_BASE_URL,
 });
 
 export const myProvider = isTestEnvironment

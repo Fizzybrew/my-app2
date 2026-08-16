@@ -9,17 +9,17 @@ export function ChatHeader({ className }: { className?: string }) {
     <header
       className={cn(
         "absolute top-0 right-0 left-0 z-10 px-4 py-2 flex items-center justify-between pointer-events-none",
-        className,
+        className
       )}
     >
       <SidebarTrigger
-        variant="outline"
         className="pointer-events-auto md:hidden"
+        variant="outline"
       />
 
       <Button
-        className="pointer-events-auto ml-auto"
         aria-label="Upgrade"
+        className="pointer-events-auto ml-auto"
         nativeButton={false}
         render={
           <Link

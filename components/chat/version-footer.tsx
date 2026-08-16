@@ -1,13 +1,13 @@
 "use client";
 
 import { isAfter } from "date-fns";
-import { motion } from "motion/react";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
   DiffIcon,
   Loader,
 } from "lucide-react";
+import { motion } from "motion/react";
 import type { Dispatch, SetStateAction } from "react";
 import { useCallback, useState } from "react";
 import { useSWRConfig } from "swr";
@@ -50,7 +50,9 @@ export const VersionFooter = ({
   }, [mode, setMode]);
 
   const handleRestore = useCallback(async () => {
-    if (!documents) return;
+    if (!documents) {
+      return;
+    }
 
     setIsMutating(true);
 
@@ -60,11 +62,11 @@ export const VersionFooter = ({
         await fetch(
           `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/document?id=${artifact.documentId}&timestamp=${getDocumentTimestampByIndex(
             documents,
-            currentVersionIndex,
+            currentVersionIndex
           )}`,
           {
             method: "DELETE",
-          },
+          }
         ),
         {
           optimisticData: documents
@@ -75,14 +77,14 @@ export const VersionFooter = ({
                     new Date(
                       getDocumentTimestampByIndex(
                         documents,
-                        currentVersionIndex,
-                      ),
-                    ),
-                  ),
+                        currentVersionIndex
+                      )
+                    )
+                  )
                 ),
               ]
             : [],
-        },
+        }
       );
     } finally {
       setIsMutating(false);
@@ -94,7 +96,9 @@ export const VersionFooter = ({
     handleVersionChange("latest");
   }, [handleVersionChange, setMode]);
 
-  if (!documents) return null;
+  if (!documents) {
+    return null;
+  }
 
   return (
     <motion.div
@@ -128,7 +132,7 @@ export const VersionFooter = ({
         <button
           className={cn(
             "flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-            mode === "diff" && "bg-muted text-foreground",
+            mode === "diff" && "bg-muted text-foreground"
           )}
           onClick={handleToggleMode}
           title="Show changes"

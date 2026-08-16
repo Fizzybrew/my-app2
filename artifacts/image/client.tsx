@@ -1,7 +1,7 @@
-import { toast } from "@/components/ui/toast";
+import { Copy, RotateCcw, RotateCw } from "lucide-react";
 import { Artifact } from "@/components/chat/create-artifact";
 import { ImageEditor } from "@/components/chat/image-editor";
-import { Copy, RotateCcw, RotateCw } from "lucide-react";
+import { toast } from "@/components/ui/toast";
 
 export const imageArtifact = new Artifact({
   actions: [
@@ -55,8 +55,8 @@ export const imageArtifact = new Artifact({
           }, "image/png");
         };
         toast.add({
-          type: "success",
           description: "Copied image to clipboard!",
+          type: "success",
         });
       },
     },

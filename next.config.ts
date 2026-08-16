@@ -31,29 +31,9 @@ const nextConfig: NextConfig = {
     prefetchInlining: true,
     turbopackFileSystemCacheForDev: true,
   },
-  images: {
-    remotePatterns: [
-      {
-        hostname: "avatar.vercel.sh",
-      },
-      {
-        hostname: "*.public.blob.vercel-storage.com",
-        protocol: "https",
-      },
-    ],
-  },
-  logging: {
-    fetches: {
-      fullUrl: false,
-    },
-    incomingRequests: false,
-  },
-  poweredByHeader: false,
-  reactCompiler: false,
   async headers() {
     return [
       {
-        source: "/(.*)",
         headers: [
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
           {
@@ -78,9 +58,29 @@ const nextConfig: NextConfig = {
               "default-src 'self'; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; font-src 'self' https:; connect-src 'self' https:;",
           },
         ],
+        source: "/(.*)",
       },
     ];
   },
+  images: {
+    remotePatterns: [
+      {
+        hostname: "avatar.vercel.sh",
+      },
+      {
+        hostname: "*.public.blob.vercel-storage.com",
+        protocol: "https",
+      },
+    ],
+  },
+  logging: {
+    fetches: {
+      fullUrl: false,
+    },
+    incomingRequests: false,
+  },
+  poweredByHeader: false,
+  reactCompiler: false,
 };
 
 export default withBotId(nextConfig);

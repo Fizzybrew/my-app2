@@ -31,10 +31,10 @@ export const visibilityBySurface: Record<Surface, ErrorVisibility> = {
   database: "log",
   document: "response",
   history: "response",
+  model_does_not_support_images: "response",
   stream: "response",
   suggestions: "response",
   vote: "response",
-  model_does_not_support_images: "response",
 };
 
 export class ChatbotError extends Error {
@@ -73,7 +73,7 @@ export class ChatbotError extends Error {
 
       return Response.json(
         { code: "", message: "Something went wrong. Please try again later." },
-        { status: statusCode },
+        { status: statusCode }
       );
     }
 

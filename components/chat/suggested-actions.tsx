@@ -18,7 +18,7 @@ function PureSuggestedActions({
     (suggestion: string) => {
       onSuggestionClick?.(suggestion);
     },
-    [chatId, onSuggestionClick],
+    [chatId, onSuggestionClick]
   );
 
   return (
@@ -33,11 +33,11 @@ function PureSuggestedActions({
     >
       {suggestions.map(({ text, icon }, index) => (
         <motion.div
-          key={text}
           animate={{ opacity: 1, y: 0 }}
           className="min-w-50 shrink-0 sm:min-w-0 sm:shrink"
           exit={{ opacity: 0, y: 16 }}
           initial={{ opacity: 0, y: 16 }}
+          key={text}
           transition={{
             delay: 0.06 * index,
             duration: 0.4,
@@ -61,7 +61,9 @@ function PureSuggestedActions({
 export const SuggestedActions = memo(
   PureSuggestedActions,
   (prevProps, nextProps) => {
-    if (prevProps.chatId !== nextProps.chatId) return false;
+    if (prevProps.chatId !== nextProps.chatId) {
+      return false;
+    }
     return true;
-  },
+  }
 );

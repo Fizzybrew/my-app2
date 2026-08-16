@@ -1,8 +1,8 @@
+import { X } from "lucide-react";
 import { memo, useCallback } from "react";
 import { initialArtifactData, useArtifact } from "@/hooks/use-artifact";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { Button } from "../ui/button";
-import { X } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 function PureArtifactCloseButton() {
   const { setArtifact } = useArtifact();
@@ -13,7 +13,7 @@ function PureArtifactCloseButton() {
             ...currentArtifact,
             isVisible: false,
           }
-        : { ...initialArtifactData, status: "idle" },
+        : { ...initialArtifactData, status: "idle" }
     );
   }, [setArtifact]);
 
@@ -24,8 +24,8 @@ function PureArtifactCloseButton() {
           <Button
             data-testid="artifact-close-button"
             onClick={handleClick}
-            variant="ghost"
             size="icon"
+            variant="ghost"
           />
         }
       >

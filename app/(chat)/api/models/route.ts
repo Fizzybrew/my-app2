@@ -9,14 +9,14 @@ export async function GET() {
   const capabilities = models.reduce(
     (acc, model) => {
       acc[model.id] = modelCapabilities[model.id] || {
+        reasoning: false,
         tools: true,
         vision: false,
-        reasoning: false,
       };
       return acc;
     },
     {} as Record<string, any>,
   );
 
-  return Response.json({ models, capabilities }, { headers });
+  return Response.json({ capabilities, models }, { headers });
 }

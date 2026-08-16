@@ -1,10 +1,11 @@
 "use client";
 
 import type { UseChatHelpers } from "@ai-sdk/react";
-import { AnimatePresence } from "motion/react";
 import type { UIMessage } from "ai";
 import equal from "fast-deep-equal";
 import { ArrowUpIcon, Paperclip, Square } from "lucide-react";
+import { AnimatePresence } from "motion/react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
@@ -17,13 +18,19 @@ import {
   useRef,
   useState,
 } from "react";
-import { toast } from "@/components/ui/toast";
 import useSWR from "swr";
 import { useLocalStorage, useWindowSize } from "usehooks-ts";
 import {
-  type ModelCapabilities,
+  ModelSelector,
+  ModelSelectorLogo,
+  ModelSelectorName,
+  ModelSelectorTrigger,
+} from "@/components/ai-elements/model-selector";
+import { toast } from "@/components/ui/toast";
+import {
   chatModels,
   DEFAULT_CHAT_MODEL,
+  type ModelCapabilities,
 } from "@/lib/ai/models";
 import type { Attachment, ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -35,6 +42,7 @@ import {
   PromptInputTools,
 } from "../ai-elements/prompt-input";
 import { Button } from "../ui/button";
+import { Spinner } from "../ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { PreviewAttachment } from "./preview-attachment";
 import {
@@ -42,32 +50,25 @@ import {
   SlashCommandMenu,
   slashCommands,
 } from "./slash-commands";
-import dynamic from "next/dynamic";
-import {
-  ModelSelector,
-  ModelSelectorTrigger,
-  ModelSelectorLogo,
-  ModelSelectorName,
-} from "@/components/ai-elements/model-selector";
-import { Spinner } from "../ui/spinner";
+
 const SuggestedActions = dynamic(
   () => import("./suggested-actions").then((mod) => mod.SuggestedActions),
-  { ssr: true },
+  { ssr: true }
 );
 
 const ModelSelectorDropdown = dynamic(
   () =>
     import("./model-selector-dropdown").then(
-      (mod) => mod.ModelSelectorDropdown,
+      (mod) => mod.ModelSelectorDropdown
     ),
   {
-    ssr: false,
     loading: () => (
       <div className="flex items-center justify-center p-2">
         <Spinner className="size-4 text-muted-foreground" />
       </div>
     ),
-  },
+    ssr: false,
+  }
 );
 
 function PureMultimodalInput({
@@ -120,7 +121,7 @@ function PureMultimodalInput({
 
   const [localStorageInput, setLocalStorageInput] = useLocalStorage(
     "input",
-    "",
+    ""
   );
 
   useEffect(() => {
@@ -154,7 +155,7 @@ function PureMultimodalInput({
         setSlashOpen(false);
       }
     },
-    [setInput],
+    [setInput]
   );
 
   const handleSlashSelect = useCallback(
@@ -170,13 +171,13 @@ function PureMultimodalInput({
           break;
         case "rename":
           toast.add({
-            type: "info",
             description: "Rename is available from the sidebar chat menu.",
+            type: "info",
           });
           break;
         case "model": {
           const modelBtn = document.querySelector<HTMLButtonElement>(
-            "[data-testid='model-selector']",
+            "[data-testid='model-selector']"
           );
           modelBtn?.click();
           break;
@@ -184,27 +185,27 @@ function PureMultimodalInput({
         case "theme":
           setTheme(resolvedTheme === "dark" ? "light" : "dark");
           break;
-        case "delete":
+        case "delete": {
           const id = toast.add({
-            title: "Delete this chat?",
             actionProps: {
               children: "Delete",
               onClick() {
                 fetch(
                   `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/chat?id=${chatId}`,
-                  { method: "DELETE" },
+                  { method: "DELETE" }
                 );
                 router.push("/");
                 toast.add({ title: "Chat deleted" });
                 toast.close(id);
               },
             },
+            title: "Delete this chat?",
           });
 
           break;
+        }
         case "purge":
           toast.add({
-            title: "Delete all chats?",
             actionProps: {
               children: "Delete all",
               onClick() {
@@ -212,27 +213,28 @@ function PureMultimodalInput({
                   `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/history`,
                   {
                     method: "DELETE",
-                  },
+                  }
                 );
                 router.push("/");
                 toast.add({ title: "All chats deleted" });
                 toast.close(id);
               },
             },
+            title: "Delete all chats?",
           });
           break;
         default:
           break;
       }
     },
-    [chatId, resolvedTheme, router, setInput, setMessages, setTheme],
+    [chatId, resolvedTheme, router, setInput, setMessages, setTheme]
   );
 
   const submitForm = useCallback(() => {
     window.history.pushState(
       {},
       "",
-      `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/chat/${chatId}`,
+      `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/chat/${chatId}`
     );
 
     sendMessage({
@@ -255,7 +257,9 @@ function PureMultimodalInput({
     setLocalStorageInput("");
     setInput("");
 
-    if (width && width > 768) textareaRef.current?.focus();
+    if (width && width > 768) {
+      textareaRef.current?.focus();
+    }
   }, [
     input,
     setInput,
@@ -277,7 +281,7 @@ function PureMultimodalInput({
         {
           body: formData,
           method: "POST",
-        },
+        }
       );
 
       if (response.ok) {
@@ -291,11 +295,11 @@ function PureMultimodalInput({
         };
       }
       const { error } = await response.json();
-      toast.add({ type: "error", title: error });
+      toast.add({ title: error, type: "error" });
     } catch {
       toast.add({
-        type: "error",
         title: "Failed to upload file, please try again!",
+        type: "error",
       });
     }
   }, []);
@@ -310,7 +314,7 @@ function PureMultimodalInput({
         const uploadPromises = files.map((file) => uploadFile(file));
         const uploadedAttachments = await Promise.all(uploadPromises);
         const successfullyUploadedAttachments = uploadedAttachments.filter(
-          (attachment) => attachment !== undefined,
+          (attachment) => attachment !== undefined
         );
 
         setAttachments((currentAttachments) => [
@@ -318,24 +322,28 @@ function PureMultimodalInput({
           ...successfullyUploadedAttachments,
         ]);
       } catch {
-        toast.add({ type: "error", title: "Failed to upload files" });
+        toast.add({ title: "Failed to upload files", type: "error" });
       } finally {
         setUploadQueue([]);
       }
     },
-    [setAttachments, uploadFile],
+    [setAttachments, uploadFile]
   );
 
   const handlePaste = useCallback(
     async (event: ClipboardEvent) => {
       const items = event.clipboardData?.items;
-      if (!items) return;
+      if (!items) {
+        return;
+      }
 
       const imageItems = Array.from(items).filter((item) =>
-        item.type.startsWith("image/"),
+        item.type.startsWith("image/")
       );
 
-      if (imageItems.length === 0) return;
+      if (imageItems.length === 0) {
+        return;
+      }
 
       event.preventDefault();
 
@@ -352,7 +360,7 @@ function PureMultimodalInput({
           (attachment) =>
             attachment !== undefined &&
             attachment.url !== undefined &&
-            attachment.contentType !== undefined,
+            attachment.contentType !== undefined
         );
 
         setAttachments((curr) => [
@@ -360,17 +368,19 @@ function PureMultimodalInput({
           ...(successfullyUploadedAttachments as Attachment[]),
         ]);
       } catch {
-        toast.add({ type: "error", title: "Failed to upload pasted image(s)" });
+        toast.add({ title: "Failed to upload pasted image(s)", type: "error" });
       } finally {
         setUploadQueue([]);
       }
     },
-    [setAttachments, uploadFile],
+    [setAttachments, uploadFile]
   );
 
   useEffect(() => {
     const textarea = textareaRef.current;
-    if (!textarea) return;
+    if (!textarea) {
+      return;
+    }
 
     textarea.addEventListener("paste", handlePaste);
     return () => textarea.removeEventListener("paste", handlePaste);
@@ -384,16 +394,20 @@ function PureMultimodalInput({
     if (input.startsWith("/")) {
       const query = input.slice(1).trim();
       const cmd = slashCommands.find((c) => c.name === query);
-      if (cmd) handleSlashSelect(cmd);
+      if (cmd) {
+        handleSlashSelect(cmd);
+      }
       return;
     }
-    if (!input.trim() && attachments.length === 0) return;
+    if (!input.trim() && attachments.length === 0) {
+      return;
+    }
     if (status === "ready" || status === "error") {
       submitForm();
     } else {
       toast.add({
-        type: "error",
         title: "Please wait for the model to finish its response!",
+        type: "error",
       });
     }
   }, [attachments.length, handleSlashSelect, input, status, submitForm]);
@@ -402,7 +416,7 @@ function PureMultimodalInput({
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (slashOpen) {
         const filtered = slashCommands.filter((cmd) =>
-          cmd.name.startsWith(slashQuery.toLowerCase()),
+          cmd.name.startsWith(slashQuery.toLowerCase())
         );
         if (e.key === "ArrowDown") {
           e.preventDefault();
@@ -416,17 +430,18 @@ function PureMultimodalInput({
         }
         if (e.key === "Enter" || e.key === "Tab") {
           e.preventDefault();
-          if (filtered[slashIndex]) handleSlashSelect(filtered[slashIndex]);
+          if (filtered[slashIndex]) {
+            handleSlashSelect(filtered[slashIndex]);
+          }
           return;
         }
         if (e.key === "Escape") {
           e.preventDefault();
           setSlashOpen(false);
-          return;
         }
       }
     },
-    [handleSlashSelect, slashIndex, slashOpen, slashQuery],
+    [handleSlashSelect, slashIndex, slashOpen, slashQuery]
   );
 
   const currentModel =
@@ -439,17 +454,17 @@ function PureMultimodalInput({
     <div
       className={cn(
         "relative flex w-full flex-col bg-background rounded-3xl",
-        className,
+        className
       )}
     >
       <input
+        aria-label="Upload files"
         className="pointer-events-none fixed -top-4 -left-4 size-0.5 opacity-0"
         multiple
         onChange={handleFileChange}
         ref={fileInputRef}
         tabIndex={-1}
         type="file"
-        aria-label="Upload files"
       />
 
       <div className="relative">
@@ -497,8 +512,8 @@ function PureMultimodalInput({
           onKeyDown={handleTextareaKeyDown}
           placeholder="Ask anything..."
           ref={textareaRef}
-          value={input}
           suppressHydrationWarning
+          value={input}
         />
         <PromptInputFooter>
           <PromptInputTools>
@@ -508,16 +523,16 @@ function PureMultimodalInput({
               status={status}
             />
             <ModelSelector
-              open={modelSelectorOpen}
               onOpenChange={setModelSelectorOpen}
+              open={modelSelectorOpen}
             >
               <ModelSelectorTrigger
                 render={
                   <Button
-                    data-testid="model-selector"
                     aria-label="Select a model"
-                    variant="ghost"
                     className="group"
+                    data-testid="model-selector"
+                    variant="ghost"
                   />
                 }
               >
@@ -527,8 +542,8 @@ function PureMultimodalInput({
 
               {modelSelectorOpen && (
                 <ModelSelectorDropdown
-                  selectedModelId={selectedModelId}
                   onModelChange={onModelChange}
+                  selectedModelId={selectedModelId}
                   setOpen={setModelSelectorOpen}
                 />
               )}
@@ -546,9 +561,9 @@ function PureMultimodalInput({
             <>
               {!input.trim() || uploadQueue.length > 0 ? (
                 <PromptInputSubmit
+                  aria-label="Send a message"
                   className="size-9"
                   data-testid="send-button"
-                  aria-label="Send a message"
                   disabled
                   status={status}
                 >
@@ -598,14 +613,26 @@ function PureMultimodalInput({
 export const MultimodalInput = memo(
   PureMultimodalInput,
   (prevProps, nextProps) => {
-    if (prevProps.input !== nextProps.input) return false;
-    if (prevProps.status !== nextProps.status) return false;
-    if (!equal(prevProps.attachments, nextProps.attachments)) return false;
-    if (prevProps.selectedModelId !== nextProps.selectedModelId) return false;
-    if (prevProps.isLoading !== nextProps.isLoading) return false;
-    if (prevProps.messages.length !== nextProps.messages.length) return false;
+    if (prevProps.input !== nextProps.input) {
+      return false;
+    }
+    if (prevProps.status !== nextProps.status) {
+      return false;
+    }
+    if (!equal(prevProps.attachments, nextProps.attachments)) {
+      return false;
+    }
+    if (prevProps.selectedModelId !== nextProps.selectedModelId) {
+      return false;
+    }
+    if (prevProps.isLoading !== nextProps.isLoading) {
+      return false;
+    }
+    if (prevProps.messages.length !== nextProps.messages.length) {
+      return false;
+    }
     return true;
-  },
+  }
 );
 
 function PureAttachmentPreviewItem({
@@ -619,9 +646,11 @@ function PureAttachmentPreviewItem({
 }) {
   const handleRemove = useCallback(() => {
     setAttachments((currentAttachments) =>
-      currentAttachments.filter((a) => a.url !== attachment.url),
+      currentAttachments.filter((a) => a.url !== attachment.url)
     );
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   }, [attachment.url, fileInputRef, setAttachments]);
 
   return <PreviewAttachment attachment={attachment} onRemove={handleRemove} />;
@@ -641,7 +670,7 @@ function PureAttachmentsButton({
   const { data: modelsResponse } = useSWR(
     `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/models`,
     (url: string) => fetch(url).then((r) => r.json()),
-    { dedupingInterval: 3_600_000, revalidateOnFocus: false },
+    { dedupingInterval: 3_600_000, revalidateOnFocus: false }
   );
 
   const caps: Record<string, ModelCapabilities> | undefined =
@@ -652,7 +681,7 @@ function PureAttachmentsButton({
       event.preventDefault();
       fileInputRef.current?.click();
     },
-    [fileInputRef],
+    [fileInputRef]
   );
 
   const isAttachDisabled = status !== "ready" || !hasVision;
@@ -661,12 +690,12 @@ function PureAttachmentsButton({
     return (
       <span className="inline-block">
         <Button
+          aria-label="Attach files and more"
           data-testid="attachments-button"
           disabled
           onClick={handleClick}
-          variant="ghost"
           size="icon"
-          aria-label="Attach files and more"
+          variant="ghost"
         >
           <Paperclip className="-rotate-42" />
         </Button>
@@ -678,11 +707,11 @@ function PureAttachmentsButton({
     <Tooltip>
       <TooltipTrigger render={<span className="inline-block" />}>
         <Button
+          aria-label="Attach files and more"
           data-testid="attachments-button"
           onClick={handleClick}
-          variant="ghost"
           size="icon"
-          aria-label="Attach files and more"
+          variant="ghost"
         >
           <Paperclip className="-rotate-42" />
         </Button>
@@ -707,7 +736,7 @@ function PureStopButton({
       stop();
       setMessages((messages) => messages);
     },
-    [setMessages, stop],
+    [setMessages, stop]
   );
 
   return (
@@ -715,8 +744,8 @@ function PureStopButton({
       <TooltipTrigger
         render={
           <Button
-            data-testid="stop-button"
             aria-label="Stop generating"
+            data-testid="stop-button"
             onClick={handleClick}
             size="icon"
           />

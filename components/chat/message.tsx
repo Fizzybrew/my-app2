@@ -7,12 +7,6 @@ import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
 import { sanitizeText } from "@/lib/utils";
 import {
-  Message,
-  MessageContent,
-  MessageResponse,
-  MessageToolbar,
-} from "../ai-elements/message";
-import {
   Confirmation,
   ConfirmationAccepted,
   ConfirmationAction,
@@ -21,6 +15,12 @@ import {
   ConfirmationRequest,
   ConfirmationTitle,
 } from "../ai-elements/confirmation";
+import {
+  Message,
+  MessageContent,
+  MessageResponse,
+  MessageToolbar,
+} from "../ai-elements/message";
 import {
   Reasoning,
   ReasoningContent,
@@ -34,14 +34,14 @@ import {
   ToolInput,
   ToolOutput,
 } from "../ai-elements/tool";
+import { Button } from "../ui/button";
 import { useDataStream } from "./data-stream-provider";
 import { DocumentToolResult } from "./document";
+import { DocumentPreview } from "./document-preview";
 import { MessageActions } from "./message-actions";
+import { submitEditedMessage } from "./message-editor";
 import { PreviewAttachment } from "./preview-attachment";
 import { Weather } from "./weather";
-import { submitEditedMessage } from "./message-editor";
-import { DocumentPreview } from "./document-preview";
-import { Button } from "../ui/button";
 
 function WaitingText() {
   const { waitingStatus } = useDataStream();
@@ -61,7 +61,9 @@ function ToolApprovalConfirmation({
   toolType: string;
   addToolApprovalResponse: UseChatHelpers<ChatMessage>["addToolApprovalResponse"];
 }) {
-  if (!approval) return null;
+  if (!approval) {
+    return null;
+  }
 
   const toolName = toolType.replace(/^tool-/, "");
 
@@ -80,13 +82,13 @@ function ToolApprovalConfirmation({
       </ConfirmationTitle>
       <ConfirmationActions>
         <ConfirmationAction
-          variant="outline"
           onClick={() =>
             addToolApprovalResponse({
-              id: approval.id,
               approved: false,
+              id: approval.id,
             })
           }
+          variant="outline"
         >
           Deny
         </ConfirmationAction>
@@ -94,8 +96,8 @@ function ToolApprovalConfirmation({
         <ConfirmationAction
           onClick={() =>
             addToolApprovalResponse({
-              id: approval.id,
               approved: true,
+              id: approval.id,
             })
           }
         >
@@ -126,7 +128,7 @@ const PurePreviewMessage = ({
   isReadonly: boolean;
 }) => {
   const attachmentsFromMessage = message.parts.filter(
-    (part) => part.type === "file",
+    (part) => part.type === "file"
   );
 
   useDataStream();
@@ -140,7 +142,7 @@ const PurePreviewMessage = ({
       (part.type === "reasoning" &&
         "text" in part &&
         part.text?.trim().length > 0) ||
-      part.type.startsWith("tool-"),
+      part.type.startsWith("tool-")
   );
 
   const isThinking = isAssistant && isLoading && !hasAnyContent;
@@ -163,7 +165,9 @@ const PurePreviewMessage = ({
   const handleSaveEdit = useCallback(async () => {
     setIsEditing(false);
 
-    if (editText.trim() === "" || editText === userText) return;
+    if (editText.trim() === "" || editText === userText) {
+      return;
+    }
 
     await submitEditedMessage({
       message,
@@ -178,7 +182,9 @@ const PurePreviewMessage = ({
   }, []);
 
   useEffect(() => {
-    if (!isEditing || !editTextareaRef.current) return;
+    if (!isEditing || !editTextareaRef.current) {
+      return;
+    }
 
     const textarea = editTextareaRef.current;
 
@@ -212,7 +218,7 @@ const PurePreviewMessage = ({
   );
 
   const reasoningParts = message.parts.filter(
-    (part) => part.type === "reasoning",
+    (part) => part.type === "reasoning"
   );
 
   const reasoningText = reasoningParts.map((part) => part.text).join("\n\n");
@@ -229,17 +235,21 @@ const PurePreviewMessage = ({
       part.type === "text" ||
       part.type === "reasoning" ||
       part.type.startsWith("tool-") ||
-      part.type === "file",
+      part.type === "file"
   );
 
-  if (isAssistant && !hasVisibleContent && !isLoading) return null;
+  if (isAssistant && !hasVisibleContent && !isLoading) {
+    return null;
+  }
 
   const parts = message.parts.map((part, index) => {
     const { type } = part;
 
     const key = `message-${message.id}-part-${index}`;
 
-    if (type === "reasoning") return null;
+    if (type === "reasoning") {
+      return null;
+    }
 
     if (type.startsWith("tool-")) {
       const approval =
@@ -260,10 +270,10 @@ const PurePreviewMessage = ({
       const approvalUI =
         approval && toolState ? (
           <ToolApprovalConfirmation
+            addToolApprovalResponse={addToolApprovalResponse}
             approval={approval}
             state={toolState}
             toolType={type}
-            addToolApprovalResponse={addToolApprovalResponse}
           />
         ) : null;
 
@@ -281,10 +291,10 @@ const PurePreviewMessage = ({
         const approvalOutcome =
           approval && toolState === "output-available" ? (
             <ToolApprovalConfirmation
+              addToolApprovalResponse={addToolApprovalResponse}
               approval={approval}
               state={toolState}
               toolType={type}
-              addToolApprovalResponse={addToolApprovalResponse}
             />
           ) : null;
 
@@ -318,10 +328,10 @@ const PurePreviewMessage = ({
           <div className="w-full space-y-3" key={toolCallId}>
             {approval && toolState === "output-available" && (
               <ToolApprovalConfirmation
+                addToolApprovalResponse={addToolApprovalResponse}
                 approval={approval}
                 state={toolState}
                 toolType={type}
-                addToolApprovalResponse={addToolApprovalResponse}
               />
             )}
 
@@ -348,10 +358,10 @@ const PurePreviewMessage = ({
           <div className="relative w-full space-y-3" key={toolCallId}>
             {approval && toolState === "output-available" && (
               <ToolApprovalConfirmation
+                addToolApprovalResponse={addToolApprovalResponse}
                 approval={approval}
                 state={toolState}
                 toolType={type}
-                addToolApprovalResponse={addToolApprovalResponse}
               />
             )}
 
@@ -371,10 +381,10 @@ const PurePreviewMessage = ({
           <div className="w-full space-y-3" key={toolCallId}>
             {approval && toolState === "output-available" && (
               <ToolApprovalConfirmation
+                addToolApprovalResponse={addToolApprovalResponse}
                 approval={approval}
                 state={toolState}
                 toolType={type}
-                addToolApprovalResponse={addToolApprovalResponse}
               />
             )}
 
@@ -430,11 +440,11 @@ const PurePreviewMessage = ({
 
   return (
     <Message
-      id={message.id}
-      from={message.role}
+      className="group/message"
       data-role={message.role}
       data-testid={`message-${message.role}`}
-      className="group/message"
+      from={message.role}
+      id={message.id}
     >
       {isThinking ? (
         <WaitingText />
@@ -442,11 +452,11 @@ const PurePreviewMessage = ({
         <div className="w-full">
           <div className="flex w-full flex-col gap-1.5 rounded-3xl border border-border/30 bg-secondary px-3.5 py-2">
             <textarea
+              className="min-h-20 w-full resize-none bg-transparent placeholder:text-muted-foreground focus:outline-none"
+              onChange={(event) => setEditText(event.target.value)}
+              placeholder="Edit your message..."
               ref={editTextareaRef}
               value={editText}
-              onChange={(event) => setEditText(event.target.value)}
-              className="min-h-20 w-full resize-none bg-transparent placeholder:text-muted-foreground focus:outline-none"
-              placeholder="Edit your message..."
             />
 
             <div className="flex justify-end gap-2 pt-2">
@@ -496,7 +506,7 @@ const PurePreviewMessage = ({
 export const PreviewMessage = PurePreviewMessage;
 
 export const ThinkingMessage = () => (
-  <Message from="assistant" data-testid="message-assistant-loading">
+  <Message data-testid="message-assistant-loading" from="assistant">
     <WaitingText />
   </Message>
 );

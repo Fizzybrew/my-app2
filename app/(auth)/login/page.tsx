@@ -16,7 +16,7 @@ export default function Page() {
 
   const [state, formAction] = useActionState<LoginActionState, FormData>(
     login,
-    { status: "idle" },
+    { status: "idle" }
   );
 
   const { update: updateSession } = useSession();
@@ -24,11 +24,11 @@ export default function Page() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: router and updateSession are stable refs
   useEffect(() => {
     if (state.status === "failed") {
-      toast.add({ type: "error", description: "Invalid credentials!" });
+      toast.add({ description: "Invalid credentials!", type: "error" });
     } else if (state.status === "invalid_data") {
       toast.add({
-        type: "error",
         description: "Failed validating your submission!",
+        type: "error",
       });
     } else if (state.status === "success") {
       setIsSuccessful(true);

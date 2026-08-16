@@ -82,7 +82,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       ? null
       : `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/messages?chatId=${chatId}`,
     fetcher,
-    { revalidateOnFocus: false },
+    { revalidateOnFocus: false }
   );
 
   const initialMessages: ChatMessage[] = isNewChat
@@ -111,11 +111,11 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     },
     onError: (error) => {
       if (error instanceof ChatbotError) {
-        toast.add({ type: "error", title: error.message });
+        toast.add({ title: error.message, type: "error" });
       } else {
         toast.add({
-          type: "error",
           title: error.message || "Oops, an error occurred!",
+          type: "error",
         });
       }
     },
@@ -130,7 +130,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
             "state" in part &&
             part.state === "approval-responded" &&
             "approval" in part &&
-            (part.approval as { approved?: boolean })?.approved === true,
+            (part.approval as { approved?: boolean })?.approved === true
         ) ?? false
       );
     },
@@ -147,7 +147,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
               return (
                 state === "approval-responded" || state === "output-denied"
               );
-            }),
+            })
           );
 
         return {
@@ -217,7 +217,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       window.history.replaceState(
         {},
         "",
-        `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/chat/${chatId}`,
+        `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/chat/${chatId}`
       );
       sendMessage({
         parts: [{ text: query, type: "text" }],
@@ -240,7 +240,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       ? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/vote?chatId=${chatId}`
       : null,
     fetcher,
-    { revalidateOnFocus: false },
+    { revalidateOnFocus: false }
   );
 
   const value = useMemo<ActiveChatContextValue>(
@@ -276,7 +276,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       isLoading,
       votes,
       currentModelId,
-    ],
+    ]
   );
 
   return (

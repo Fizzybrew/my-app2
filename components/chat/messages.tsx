@@ -22,7 +22,6 @@ type MessagesProps = {
   isArtifactVisible: boolean;
   isLoading?: boolean;
   selectedModelId: string;
-  className?: string;
 };
 
 function PureMessages({
@@ -37,7 +36,6 @@ function PureMessages({
   isArtifactVisible: _isArtifactVisible,
   isLoading: _isLoading,
   selectedModelId: _selectedModelId,
-  className,
 }: MessagesProps) {
   useDataStream();
 
@@ -46,8 +44,8 @@ function PureMessages({
       <ConversationContent className="mx-auto w-full max-w-3xl pb-35">
         {messages.length === 0 ? (
           <ConversationEmptyState
-            title="What can I help with?"
             description=""
+            title="What can I help with?"
           />
         ) : (
           <>
