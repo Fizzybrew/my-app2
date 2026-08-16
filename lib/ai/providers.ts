@@ -1,5 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { customProvider, type LanguageModel } from "ai";
+import { unstable_cache } from "next/cache";
 import { isTestEnvironment } from "../constants";
 import { DEFAULT_CHAT_MODEL, TITLE_MODEL_ID } from "./models";
 
@@ -8,6 +9,7 @@ const ROUTERAI_API_BASE_URL =
   "https://routerai.ru/api/v1";
 
 const MODEL_CATALOG_REVALIDATE_SECONDS = 60 * 60;
+const MODEL_CATALOG_CACHE_KEY = "routerai-model-catalog";
 
 const FALLBACK_MODEL: ChatModel = {
   id: DEFAULT_CHAT_MODEL,
@@ -130,9 +132,7 @@ function parseModelsResponse(response: unknown): ChatModel[] {
 }
 
 async function fetchModelCatalog(): Promise<ChatModel[]> {
-  const response = await fetch(`${ROUTERAI_API_BASE_URL}/models`, {
-    next: { revalidate: MODEL_CATALOG_REVALIDATE_SECONDS },
-  });
+  const response = await fetch(`${ROUTERAI_API_BASE_URL}/models`);
 
   if (!response.ok) {
     throw new Error(
@@ -143,14 +143,25 @@ async function fetchModelCatalog(): Promise<ChatModel[]> {
   return parseModelsResponse(await response.json());
 }
 
+const getCachedModelCatalog = unstable_cache(
+  async () => {
+    const models = await fetchModelCatalog();
+    return models.length > 0 ? models : [FALLBACK_MODEL];
+  },
+  [MODEL_CATALOG_CACHE_KEY],
+  {
+    revalidate: MODEL_CATALOG_REVALIDATE_SECONDS,
+  },
+);
+
 /**
- * Return the current RouterAI catalog. If the provider is temporarily
- * unavailable, keep the application usable with the configured default.
+ * Return the current RouterAI catalog from one shared server-side cache.
+ * The cache is refreshed at most once per hour instead of refetching the
+ * provider whenever a consumer asks for the catalog.
  */
 export async function getModelCatalog(): Promise<ChatModel[]> {
   try {
-    const models = await fetchModelCatalog();
-    return models.length > 0 ? models : [FALLBACK_MODEL];
+    return await getCachedModelCatalog();
   } catch {
     return [FALLBACK_MODEL];
   }
