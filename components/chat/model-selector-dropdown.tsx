@@ -35,7 +35,7 @@ function ModelSelectorOption({
 }: {
   capabilities: Record<string, ModelCapabilities> | undefined;
   model: ChatModel;
-  onModelChange?: (modelId: string) => void;
+  onModelChange?: (model: { id: string; name: string }) => void;
   selectedModelId: string;
   setOpen: (open: boolean) => void;
 }) {
@@ -50,7 +50,7 @@ function ModelSelectorOption({
   );
 
   const handleSelect = useCallback(() => {
-    onModelChange?.(model.id);
+    onModelChange?.({ id: model.id, name: model.name });
     setCookie("chat-model", model.id);
     setCookie("chat-model-name", model.name);
     setOpen(false);
@@ -90,7 +90,7 @@ export function ModelSelectorDropdown({
   setOpen,
 }: {
   selectedModelId: string;
-  onModelChange?: (modelId: string) => void;
+  onModelChange?: (model: { id: string; name: string }) => void;
   setOpen: (open: boolean) => void;
 }) {
   const { data: modelsData } = useSWR<{
