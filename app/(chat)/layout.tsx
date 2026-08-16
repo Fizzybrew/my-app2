@@ -7,7 +7,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/toast";
 import { ActiveChatProvider } from "@/hooks/use-active-chat";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
-import { getModel } from "@/lib/ai/providers";
+import { getModel, type ModelCapabilities } from "@/lib/ai/providers";
 import { auth } from "../(auth)/auth";
 
 export default async function Layout({ children }: { children: React.ReactNode }) {
@@ -23,6 +23,11 @@ export default async function Layout({ children }: { children: React.ReactNode }
     model?.name ||
     cookieStore.get("chat-model-name")?.value ||
     "DeepSeek V4 Flash";
+  const initialModelCapabilities: ModelCapabilities = model?.capabilities ?? {
+    tools: true,
+    vision: true,
+    reasoning: true,
+  };
 
   return (
     <>
@@ -36,6 +41,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
           <SidebarInset>
             <Toaster />
             <ActiveChatProvider
+              initialModelCapabilities={initialModelCapabilities}
               initialModelId={initialModelId}
               initialModelName={initialModelName}
             >
