@@ -11,6 +11,7 @@ import {
   type SetStateAction,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -68,18 +69,10 @@ function getCookie(name: string): string | null {
   return value ? decodeURIComponent(value) : null;
 }
 
-function getInitialModel() {
-  return {
-    id: getCookie("chat-model") ?? DEFAULT_CHAT_MODEL,
-    name: getCookie("chat-model-name") ?? "DeepSeek V4 Flash",
-  };
-}
+const useIsomorphicLayoutEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
 
-export function ActiveChatProvider({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export function ActiveChatProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { setDataStream, setWaitingStatus } = useDataStream();
   const { mutate } = useSWRConfig();
@@ -96,8 +89,26 @@ export function ActiveChatProvider({
 
   const chatId = chatIdFromUrl ?? newChatIdRef.current;
 
-  const [currentModel, setCurrentModelState] = useState(getInitialModel);
+  const [currentModel, setCurrentModelState] = useState({
+    id: DEFAULT_CHAT_MODEL,
+    name: "DeepSeek V4 Flash",
+  });
   const currentModelRef = useRef(currentModel);
+
+  useIsomorphicLayoutEffect(() => {
+    const modelId = getCookie("chat-model");
+    const modelName = getCookie("chat-model-name");
+
+    if (!modelId) return;
+
+    const restoredModel = {
+      id: modelId,
+      name: modelName || "DeepSeek V4 Flash",
+    };
+
+    currentModelRef.current = restoredModel;
+    setCurrentModelState(restoredModel);
+  }, []);
 
   useEffect(() => {
     currentModelRef.current = currentModel;
