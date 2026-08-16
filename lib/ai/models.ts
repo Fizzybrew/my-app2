@@ -6,8 +6,8 @@ export const DEFAULT_CHAT_MODEL = "deepseek/deepseek-v4-flash";
 export const TITLE_MODEL_ID = DEFAULT_CHAT_MODEL;
 
 /**
- * Compatibility types for client components during the model-catalog migration.
- * Runtime model data is loaded from /api/models via lib/ai/providers.ts.
+ * Temporary client compatibility types. Runtime model data is sourced from
+ * RouterAI through /api/models and lib/ai/providers.ts.
  */
 export type ModelCapabilities = {
   tools: boolean;
@@ -24,17 +24,77 @@ export type ChatModel = {
   capabilities: ModelCapabilities;
 };
 
-export const chatModels: ChatModel[] = [
-  {
-    id: DEFAULT_CHAT_MODEL,
-    name: "DeepSeek V4 Flash",
-    provider: "deepseek",
-    description: "Default chat model",
-    contextLength: 0,
-    capabilities: {
-      tools: true,
-      vision: true,
-      reasoning: true,
-    },
+const DEFAULT_MODEL: ChatModel = {
+  id: DEFAULT_CHAT_MODEL,
+  name: "DeepSeek V4 Flash",
+  provider: "deepseek",
+  description: "Default chat model",
+  contextLength: 0,
+  capabilities: {
+    tools: true,
+    vision: true,
+    reasoning: true,
   },
-];
+};
+
+function getCookie(name: string): string | undefined {
+  if (typeof document === "undefined") {
+    return undefined;
+  }
+
+  const encodedName = `${name}=`;
+  const value = document.cookie
+    .split("; ")
+    .find((cookie) => cookie.startsWith(encodedName))
+    ?.slice(encodedName.length);
+
+  return value ? decodeURIComponent(value) : undefined;
+}
+
+/**
+ * Compatibility facade for older client consumers. New code should use
+ * the dynamic catalog from lib/ai/providers.ts through /api/models.
+ */
+export const chatModels: ChatModel[] = new Proxy([DEFAULT_MODEL], {
+  get(target, property, receiver) {
+    if (property === "find") {
+      return (
+        predicate: (model: ChatModel, index: number, array: ChatModel[]) => unknown,
+      ) => {
+        const found = target.find(predicate);
+        if (found) {
+          return found;
+        }
+
+        const selectedId = getCookie("chat-model");
+        if (!selectedId || selectedId === DEFAULT_MODEL.id) {
+          return undefined;
+        }
+
+        const selectedName = getCookie("chat-model-name") ?? selectedId;
+        const selectedProvider = selectedId.includes("/")
+          ? selectedId.split("/")[0]
+          : "routerai";
+
+        const selectedModel: ChatModel = {
+          id: selectedId,
+          name: selectedName,
+          provider: selectedProvider,
+          description: "",
+          contextLength: 0,
+          capabilities: {
+            tools: true,
+            vision: false,
+            reasoning: false,
+          },
+        };
+
+        return predicate(selectedModel, 0, [selectedModel])
+          ? selectedModel
+          : undefined;
+      };
+    }
+
+    return Reflect.get(target, property, receiver);
+  },
+});
