@@ -22,6 +22,7 @@ import { getChatHistoryPaginationKey } from "@/components/chat/sidebar-history";
 import { toast } from "@/components/ui/toast";
 import { useAutoResume } from "@/hooks/use-auto-resume";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
+import type { ModelCapabilities } from "@/lib/ai/providers";
 import type { Vote } from "@/lib/db/schema";
 import { ChatbotError } from "@/lib/errors";
 import type { ChatMessage } from "@/lib/types";
@@ -43,7 +44,12 @@ type ActiveChatContextValue = {
   votes: Vote[] | undefined;
   currentModelId: string;
   currentModelName: string;
-  setCurrentModel: (model: { id: string; name: string }) => void;
+  currentModelCapabilities: ModelCapabilities;
+  setCurrentModel: (model: {
+    id: string;
+    name: string;
+    capabilities: ModelCapabilities;
+  }) => void;
 };
 
 const ActiveChatContext = createContext<ActiveChatContextValue | null>(null);
@@ -55,10 +61,16 @@ function extractChatId(pathname: string): string | null {
 
 export function ActiveChatProvider({
   children,
+  initialModelCapabilities = {
+    tools: true,
+    vision: true,
+    reasoning: true,
+  },
   initialModelId = DEFAULT_CHAT_MODEL,
   initialModelName = "DeepSeek V4 Flash",
 }: {
   children: ReactNode;
+  initialModelCapabilities?: ModelCapabilities;
   initialModelId?: string;
   initialModelName?: string;
 }) {
@@ -81,6 +93,7 @@ export function ActiveChatProvider({
   const [currentModel, setCurrentModelState] = useState({
     id: initialModelId,
     name: initialModelName,
+    capabilities: initialModelCapabilities,
   });
   const currentModelRef = useRef(currentModel);
 
@@ -88,7 +101,11 @@ export function ActiveChatProvider({
     currentModelRef.current = currentModel;
   }, [currentModel]);
 
-  const selectModel = (model: { id: string; name: string }) => {
+  const selectModel = (model: {
+    id: string;
+    name: string;
+    capabilities: ModelCapabilities;
+  }) => {
     currentModelRef.current = model;
     setCurrentModelState(model);
   };
@@ -253,6 +270,7 @@ export function ActiveChatProvider({
     () => ({
       addToolApprovalResponse,
       chatId,
+      currentModelCapabilities: currentModel.capabilities,
       currentModelId: currentModel.id,
       currentModelName: currentModel.name,
       input,
