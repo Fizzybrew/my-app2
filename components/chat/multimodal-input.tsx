@@ -2,7 +2,6 @@
 
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
-import equal from "fast-deep-equal";
 import { ArrowUpIcon, Paperclip, Square } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 import dynamic from "next/dynamic";
@@ -27,11 +26,7 @@ import {
   ModelSelectorTrigger,
 } from "@/components/ai-elements/model-selector";
 import { toast } from "@/components/ui/toast";
-import {
-  chatModels,
-  DEFAULT_CHAT_MODEL,
-  type ModelCapabilities,
-} from "@/lib/ai/models";
+import type { ModelCapabilities } from "@/lib/ai/providers";
 import type { Attachment, ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
@@ -53,13 +48,13 @@ import {
 
 const SuggestedActions = dynamic(
   () => import("./suggested-actions").then((mod) => mod.SuggestedActions),
-  { ssr: true }
+  { ssr: true },
 );
 
 const ModelSelectorDropdown = dynamic(
   () =>
     import("./model-selector-dropdown").then(
-      (mod) => mod.ModelSelectorDropdown
+      (mod) => mod.ModelSelectorDropdown,
     ),
   {
     loading: () => (
@@ -68,8 +63,26 @@ const ModelSelectorDropdown = dynamic(
       </div>
     ),
     ssr: false,
-  }
+  },
 );
+
+type MultimodalInputProps = {
+  chatId: string;
+  input: string;
+  setInput: Dispatch<SetStateAction<string>>;
+  status: UseChatHelpers<ChatMessage>["status"];
+  stop: () => void;
+  attachments: Attachment[];
+  setAttachments: Dispatch<SetStateAction<Attachment[]>>;
+  messages: UIMessage[];
+  setMessages: UseChatHelpers<ChatMessage>["setMessages"];
+  sendMessage: UseChatHelpers<ChatMessage>["sendMessage"];
+  className?: string;
+  selectedModelId: string;
+  currentModelName: string;
+  onModelChange?: (model: { id: string; name: string }) => void;
+  isLoading?: boolean;
+};
 
 function PureMultimodalInput({
   chatId,
@@ -84,30 +97,26 @@ function PureMultimodalInput({
   sendMessage,
   className,
   selectedModelId,
+  currentModelName,
   onModelChange,
   isLoading,
-}: {
-  chatId: string;
-  input: string;
-  setInput: Dispatch<SetStateAction<string>>;
-  status: UseChatHelpers<ChatMessage>["status"];
-  stop: () => void;
-  attachments: Attachment[];
-  setAttachments: Dispatch<SetStateAction<Attachment[]>>;
-  messages: UIMessage[];
-  setMessages: UseChatHelpers<ChatMessage>["setMessages"];
-  sendMessage: UseChatHelpers<ChatMessage>["sendMessage"];
-  className?: string;
-  selectedModelId: string;
-  onModelChange?: (modelId: string) => void;
-  isLoading?: boolean;
-}) {
+}: MultimodalInputProps) {
   const router = useRouter();
   const { setTheme, resolvedTheme } = useTheme();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { width } = useWindowSize();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const hasAutoFocused = useRef(false);
+  const { width } = useWindowSize();
   const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
+  const [uploadQueue, setUploadQueue] = useState<string[]>([]);
+  const [slashOpen, setSlashOpen] = useState(false);
+  const [slashQuery, setSlashQuery] = useState("");
+  const [slashIndex, setSlashIndex] = useState(0);
+
+  const [localStorageInput, setLocalStorageInput] = useLocalStorage(
+    "input",
+    "",
+  );
 
   useEffect(() => {
     if (!hasAutoFocused.current && width) {
@@ -119,55 +128,41 @@ function PureMultimodalInput({
     }
   }, [width]);
 
-  const [localStorageInput, setLocalStorageInput] = useLocalStorage(
-    "input",
-    ""
-  );
-
   useEffect(() => {
-    if (textareaRef.current) {
-      const domValue = textareaRef.current.value;
-      const finalValue = domValue || localStorageInput || "";
-      setInput(finalValue);
-    }
+    setInput(localStorageInput || "");
   }, [localStorageInput, setInput]);
 
   useEffect(() => {
     setLocalStorageInput(input);
   }, [input, setLocalStorageInput]);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadQueue, setUploadQueue] = useState<string[]>([]);
-  const [slashOpen, setSlashOpen] = useState(false);
-  const [slashQuery, setSlashQuery] = useState("");
-  const [slashIndex, setSlashIndex] = useState(0);
-
   const handleInput = useCallback(
     (event: ChangeEvent<HTMLTextAreaElement>) => {
-      const val = event.target.value;
-      setInput(val);
+      const value = event.target.value;
+      setInput(value);
 
-      if (val.startsWith("/") && !val.includes(" ")) {
+      if (value.startsWith("/") && !value.includes(" ")) {
         setSlashOpen(true);
-        setSlashQuery(val.slice(1));
+        setSlashQuery(value.slice(1));
         setSlashIndex(0);
       } else {
         setSlashOpen(false);
       }
     },
-    [setInput]
+    [setInput],
   );
 
   const handleSlashSelect = useCallback(
-    (cmd: SlashCommand) => {
+    (command: SlashCommand) => {
       setSlashOpen(false);
       setInput("");
-      switch (cmd.action) {
+
+      switch (command.action) {
         case "new":
           router.push("/");
           break;
         case "clear":
-          setMessages(() => []);
+          setMessages([]);
           break;
         case "rename":
           toast.add({
@@ -175,66 +170,62 @@ function PureMultimodalInput({
             type: "info",
           });
           break;
-        case "model": {
-          const modelBtn = document.querySelector<HTMLButtonElement>(
-            "[data-testid='model-selector']"
-          );
-          modelBtn?.click();
+        case "model":
+          document
+            .querySelector<HTMLButtonElement>("[data-testid='model-selector']")
+            ?.click();
           break;
-        }
         case "theme":
           setTheme(resolvedTheme === "dark" ? "light" : "dark");
           break;
         case "delete": {
-          const id = toast.add({
+          const toastId = toast.add({
             actionProps: {
               children: "Delete",
               onClick() {
-                fetch(
+                void fetch(
                   `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/chat?id=${chatId}`,
-                  { method: "DELETE" }
+                  { method: "DELETE" },
                 );
                 router.push("/");
                 toast.add({ title: "Chat deleted" });
-                toast.close(id);
+                toast.close(toastId);
               },
             },
             title: "Delete this chat?",
           });
-
           break;
         }
-        case "purge":
-          toast.add({
+        case "purge": {
+          const toastId = toast.add({
             actionProps: {
               children: "Delete all",
               onClick() {
-                fetch(
+                void fetch(
                   `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/history`,
-                  {
-                    method: "DELETE",
-                  }
+                  { method: "DELETE" },
                 );
                 router.push("/");
                 toast.add({ title: "All chats deleted" });
-                toast.close(id);
+                toast.close(toastId);
               },
             },
             title: "Delete all chats?",
           });
           break;
+        }
         default:
           break;
       }
     },
-    [chatId, resolvedTheme, router, setInput, setMessages, setTheme]
+    [chatId, resolvedTheme, router, setInput, setMessages, setTheme],
   );
 
   const submitForm = useCallback(() => {
     window.history.pushState(
       {},
       "",
-      `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/chat/${chatId}`
+      `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/chat/${chatId}`,
     );
 
     sendMessage({
@@ -245,10 +236,7 @@ function PureMultimodalInput({
           type: "file" as const,
           url: attachment.url,
         })),
-        {
-          text: input,
-          type: "text",
-        },
+        { text: input, type: "text" },
       ],
       role: "user",
     });
@@ -261,14 +249,14 @@ function PureMultimodalInput({
       textareaRef.current?.focus();
     }
   }, [
-    input,
-    setInput,
     attachments,
+    chatId,
+    input,
     sendMessage,
     setAttachments,
+    setInput,
     setLocalStorageInput,
     width,
-    chatId,
   ]);
 
   const uploadFile = useCallback(async (file: File) => {
@@ -278,130 +266,97 @@ function PureMultimodalInput({
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/files/upload`,
-        {
-          body: formData,
-          method: "POST",
-        }
+        { body: formData, method: "POST" },
       );
 
-      if (response.ok) {
-        const data = await response.json();
-        const { url, pathname, contentType } = data;
-
-        return {
-          contentType,
-          name: pathname,
-          url,
-        };
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        toast.add({
+          title: data?.error ?? "Failed to upload file",
+          type: "error",
+        });
+        return undefined;
       }
-      const { error } = await response.json();
-      toast.add({ title: error, type: "error" });
+
+      const { url, pathname, contentType } = await response.json();
+      return { contentType, name: pathname, url } as Attachment;
     } catch {
       toast.add({
         title: "Failed to upload file, please try again!",
         type: "error",
       });
+      return undefined;
     }
   }, []);
 
   const handleFileChange = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(event.target.files || []);
-
+      const files = Array.from(event.target.files ?? []);
       setUploadQueue(files.map((file) => file.name));
 
       try {
-        const uploadPromises = files.map((file) => uploadFile(file));
-        const uploadedAttachments = await Promise.all(uploadPromises);
-        const successfullyUploadedAttachments = uploadedAttachments.filter(
-          (attachment) => attachment !== undefined
-        );
-
-        setAttachments((currentAttachments) => [
-          ...currentAttachments,
-          ...successfullyUploadedAttachments,
+        const uploaded = await Promise.all(files.map(uploadFile));
+        setAttachments((current) => [
+          ...current,
+          ...uploaded.filter((item): item is Attachment => Boolean(item)),
         ]);
-      } catch {
-        toast.add({ title: "Failed to upload files", type: "error" });
       } finally {
         setUploadQueue([]);
       }
     },
-    [setAttachments, uploadFile]
+    [setAttachments, uploadFile],
   );
 
   const handlePaste = useCallback(
     async (event: ClipboardEvent) => {
       const items = event.clipboardData?.items;
-      if (!items) {
-        return;
-      }
+      if (!items) return;
 
       const imageItems = Array.from(items).filter((item) =>
-        item.type.startsWith("image/")
+        item.type.startsWith("image/"),
       );
-
-      if (imageItems.length === 0) {
-        return;
-      }
+      if (imageItems.length === 0) return;
 
       event.preventDefault();
-
-      setUploadQueue((prev) => [...prev, "Pasted image"]);
+      setUploadQueue((current) => [...current, "Pasted image"]);
 
       try {
-        const uploadPromises = imageItems
-          .map((item) => item.getAsFile())
-          .filter((file): file is File => file !== null)
-          .map((file) => uploadFile(file));
-
-        const uploadedAttachments = await Promise.all(uploadPromises);
-        const successfullyUploadedAttachments = uploadedAttachments.filter(
-          (attachment) =>
-            attachment !== undefined &&
-            attachment.url !== undefined &&
-            attachment.contentType !== undefined
+        const uploaded = await Promise.all(
+          imageItems
+            .map((item) => item.getAsFile())
+            .filter((file): file is File => file !== null)
+            .map(uploadFile),
         );
 
-        setAttachments((curr) => [
-          ...curr,
-          ...(successfullyUploadedAttachments as Attachment[]),
+        setAttachments((current) => [
+          ...current,
+          ...uploaded.filter((item): item is Attachment => Boolean(item)),
         ]);
-      } catch {
-        toast.add({ title: "Failed to upload pasted image(s)", type: "error" });
       } finally {
         setUploadQueue([]);
       }
     },
-    [setAttachments, uploadFile]
+    [setAttachments, uploadFile],
   );
 
   useEffect(() => {
     const textarea = textareaRef.current;
-    if (!textarea) {
-      return;
-    }
-
+    if (!textarea) return;
     textarea.addEventListener("paste", handlePaste);
     return () => textarea.removeEventListener("paste", handlePaste);
   }, [handlePaste]);
 
-  const handleSlashClose = useCallback(() => {
-    setSlashOpen(false);
-  }, []);
-
   const handlePromptSubmit = useCallback(() => {
     if (input.startsWith("/")) {
-      const query = input.slice(1).trim();
-      const cmd = slashCommands.find((c) => c.name === query);
-      if (cmd) {
-        handleSlashSelect(cmd);
-      }
+      const command = slashCommands.find(
+        (item) => item.name === input.slice(1).trim(),
+      );
+      if (command) handleSlashSelect(command);
       return;
     }
-    if (!input.trim() && attachments.length === 0) {
-      return;
-    }
+
+    if (!input.trim() && attachments.length === 0) return;
+
     if (status === "ready" || status === "error") {
       submitForm();
     } else {
@@ -413,48 +368,37 @@ function PureMultimodalInput({
   }, [attachments.length, handleSlashSelect, input, status, submitForm]);
 
   const handleTextareaKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (slashOpen) {
-        const filtered = slashCommands.filter((cmd) =>
-          cmd.name.startsWith(slashQuery.toLowerCase())
-        );
-        if (e.key === "ArrowDown") {
-          e.preventDefault();
-          setSlashIndex((i) => Math.min(i + 1, filtered.length - 1));
-          return;
-        }
-        if (e.key === "ArrowUp") {
-          e.preventDefault();
-          setSlashIndex((i) => Math.max(i - 1, 0));
-          return;
-        }
-        if (e.key === "Enter" || e.key === "Tab") {
-          e.preventDefault();
-          if (filtered[slashIndex]) {
-            handleSlashSelect(filtered[slashIndex]);
-          }
-          return;
-        }
-        if (e.key === "Escape") {
-          e.preventDefault();
-          setSlashOpen(false);
-        }
+    (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (!slashOpen) return;
+
+      const filtered = slashCommands.filter((command) =>
+        command.name.startsWith(slashQuery.toLowerCase()),
+      );
+
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setSlashIndex((index) => Math.min(index + 1, filtered.length - 1));
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setSlashIndex((index) => Math.max(index - 1, 0));
+      } else if (event.key === "Enter" || event.key === "Tab") {
+        event.preventDefault();
+        if (filtered[slashIndex]) handleSlashSelect(filtered[slashIndex]);
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        setSlashOpen(false);
       }
     },
-    [handleSlashSelect, slashIndex, slashOpen, slashQuery]
+    [handleSlashSelect, slashIndex, slashOpen, slashQuery],
   );
 
-  const currentModel =
-    chatModels.find((m) => m.id === selectedModelId) ??
-    chatModels.find((m) => m.id === DEFAULT_CHAT_MODEL) ??
-    chatModels[0];
-  const [provider] = currentModel.id.split("/");
+  const [provider] = selectedModelId.split("/");
 
   return (
     <div
       className={cn(
-        "relative flex w-full flex-col bg-background rounded-3xl",
-        className
+        "relative flex w-full flex-col rounded-3xl bg-background",
+        className,
       )}
     >
       <input
@@ -467,20 +411,19 @@ function PureMultimodalInput({
         type="file"
       />
 
-      <div className="relative">
-        {slashOpen ? (
-          <SlashCommandMenu
-            onClose={handleSlashClose}
-            onSelect={handleSlashSelect}
-            query={slashQuery}
-            selectedIndex={slashIndex}
-          />
-        ) : null}
-      </div>
+      {slashOpen && (
+        <SlashCommandMenu
+          onClose={() => setSlashOpen(false)}
+          onSelect={handleSlashSelect}
+          query={slashQuery}
+          selectedIndex={slashIndex}
+        />
+      )}
+
       <PromptInput onSubmit={handlePromptSubmit} suppressHydrationWarning>
         {(attachments.length > 0 || uploadQueue.length > 0) && (
           <div
-            className="flex w-full self-start flex-row gap-2 overflow-x-auto px-3 pt-3 no-scrollbar"
+            className="flex w-full flex-row gap-2 overflow-x-auto px-3 pt-3 no-scrollbar"
             data-testid="attachments-preview"
           >
             {attachments.map((attachment) => (
@@ -491,22 +434,18 @@ function PureMultimodalInput({
                 setAttachments={setAttachments}
               />
             ))}
-
             {uploadQueue.map((filename) => (
               <PreviewAttachment
-                attachment={{
-                  contentType: "",
-                  name: filename,
-                  url: "",
-                }}
-                isUploading={true}
+                attachment={{ contentType: "", name: filename, url: "" }}
+                isUploading
                 key={filename}
               />
             ))}
           </div>
         )}
+
         <PromptInputTextarea
-          className="min-h-4 text-base! px-4 pt-3.5 pb-1.5"
+          className="min-h-4 px-4 pt-3.5 pb-1.5 text-base!"
           data-testid="multimodal-input"
           onChange={handleInput}
           onKeyDown={handleTextareaKeyDown}
@@ -515,6 +454,7 @@ function PureMultimodalInput({
           suppressHydrationWarning
           value={input}
         />
+
         <PromptInputFooter>
           <PromptInputTools>
             <AttachmentsButton
@@ -522,6 +462,7 @@ function PureMultimodalInput({
               selectedModelId={selectedModelId}
               status={status}
             />
+
             <ModelSelector
               onOpenChange={setModelSelectorOpen}
               open={modelSelectorOpen}
@@ -536,8 +477,8 @@ function PureMultimodalInput({
                   />
                 }
               >
-                {provider ? <ModelSelectorLogo provider={provider} /> : null}
-                <ModelSelectorName>{currentModel.name}</ModelSelectorName>
+                <ModelSelectorLogo provider={provider} />
+                <ModelSelectorName>{currentModelName}</ModelSelectorName>
               </ModelSelectorTrigger>
 
               {modelSelectorOpen && (
@@ -558,37 +499,19 @@ function PureMultimodalInput({
               <TooltipContent side="top">Stop replying</TooltipContent>
             </Tooltip>
           ) : (
-            <>
-              {!input.trim() || uploadQueue.length > 0 ? (
-                <PromptInputSubmit
-                  aria-label="Send a message"
-                  className="size-9"
-                  data-testid="send-button"
-                  disabled
-                  status={status}
-                >
-                  <ArrowUpIcon className="size-4" />
-                </PromptInputSubmit>
-              ) : (
-                <Tooltip>
-                  <TooltipTrigger
-                    render={
-                      <PromptInputSubmit
-                        className="size-9"
-                        data-testid="send-button"
-                        status={status}
-                      />
-                    }
-                  >
-                    <ArrowUpIcon className="size-4" />
-                  </TooltipTrigger>
-                  <TooltipContent side="top">Send a message</TooltipContent>
-                </Tooltip>
-              )}
-            </>
+            <PromptInputSubmit
+              aria-label="Send a message"
+              className="size-9"
+              data-testid="send-button"
+              disabled={!input.trim() || uploadQueue.length > 0}
+              status={status}
+            >
+              <ArrowUpIcon className="size-4" />
+            </PromptInputSubmit>
           )}
         </PromptInputFooter>
       </PromptInput>
+
       <AnimatePresence>
         {!isLoading &&
           messages.length === 0 &&
@@ -610,32 +533,9 @@ function PureMultimodalInput({
   );
 }
 
-export const MultimodalInput = memo(
-  PureMultimodalInput,
-  (prevProps, nextProps) => {
-    if (prevProps.input !== nextProps.input) {
-      return false;
-    }
-    if (prevProps.status !== nextProps.status) {
-      return false;
-    }
-    if (!equal(prevProps.attachments, nextProps.attachments)) {
-      return false;
-    }
-    if (prevProps.selectedModelId !== nextProps.selectedModelId) {
-      return false;
-    }
-    if (prevProps.isLoading !== nextProps.isLoading) {
-      return false;
-    }
-    if (prevProps.messages.length !== nextProps.messages.length) {
-      return false;
-    }
-    return true;
-  }
-);
+export const MultimodalInput = memo(PureMultimodalInput);
 
-function PureAttachmentPreviewItem({
+function AttachmentPreviewItem({
   attachment,
   fileInputRef,
   setAttachments,
@@ -645,117 +545,82 @@ function PureAttachmentPreviewItem({
   setAttachments: Dispatch<SetStateAction<Attachment[]>>;
 }) {
   const handleRemove = useCallback(() => {
-    setAttachments((currentAttachments) =>
-      currentAttachments.filter((a) => a.url !== attachment.url)
+    setAttachments((current) =>
+      current.filter((item) => item.url !== attachment.url),
     );
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    fileInputRef.current && (fileInputRef.current.value = "");
   }, [attachment.url, fileInputRef, setAttachments]);
 
   return <PreviewAttachment attachment={attachment} onRemove={handleRemove} />;
 }
 
-const AttachmentPreviewItem = memo(PureAttachmentPreviewItem);
-
-function PureAttachmentsButton({
+function AttachmentsButton({
   fileInputRef,
-  status,
   selectedModelId,
+  status,
 }: {
   fileInputRef: React.MutableRefObject<HTMLInputElement | null>;
-  status: UseChatHelpers<ChatMessage>["status"];
   selectedModelId: string;
+  status: UseChatHelpers<ChatMessage>["status"];
 }) {
-  const { data: modelsResponse } = useSWR(
+  const { data } = useSWR<{
+    capabilities: Record<string, ModelCapabilities>;
+  }>(
     `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/models`,
-    (url: string) => fetch(url).then((r) => r.json()),
-    { dedupingInterval: 3_600_000, revalidateOnFocus: false }
+    (url: string) => fetch(url).then((response) => response.json()),
+    { dedupingInterval: 3_600_000, revalidateOnFocus: false },
   );
 
-  const caps: Record<string, ModelCapabilities> | undefined =
-    modelsResponse?.capabilities ?? modelsResponse;
-  const hasVision = caps?.[selectedModelId]?.vision ?? false;
-  const handleClick = useCallback(
-    (event: React.MouseEvent<HTMLButtonElement>) => {
-      event.preventDefault();
-      fileInputRef.current?.click();
-    },
-    [fileInputRef]
+  const hasVision = data?.capabilities?.[selectedModelId]?.vision ?? false;
+  const disabled = status !== "ready" || !hasVision;
+
+  const button = (
+    <Button
+      aria-label="Attach files and more"
+      data-testid="attachments-button"
+      disabled={disabled}
+      onClick={(event) => {
+        event.preventDefault();
+        fileInputRef.current?.click();
+      }}
+      size="icon"
+      variant="ghost"
+    >
+      <Paperclip className="-rotate-42" />
+    </Button>
   );
 
-  const isAttachDisabled = status !== "ready" || !hasVision;
-
-  if (isAttachDisabled) {
-    return (
-      <span className="inline-block">
-        <Button
-          aria-label="Attach files and more"
-          data-testid="attachments-button"
-          disabled
-          onClick={handleClick}
-          size="icon"
-          variant="ghost"
-        >
-          <Paperclip className="-rotate-42" />
-        </Button>
-      </span>
-    );
-  }
+  if (disabled) return button;
 
   return (
     <Tooltip>
       <TooltipTrigger render={<span className="inline-block" />}>
-        <Button
-          aria-label="Attach files and more"
-          data-testid="attachments-button"
-          onClick={handleClick}
-          size="icon"
-          variant="ghost"
-        >
-          <Paperclip className="-rotate-42" />
-        </Button>
+        {button}
       </TooltipTrigger>
       <TooltipContent side="top">Attach files and more</TooltipContent>
     </Tooltip>
   );
 }
 
-const AttachmentsButton = memo(PureAttachmentsButton);
-
-function PureStopButton({
+function StopButton({
   stop,
   setMessages,
 }: {
   stop: () => void;
   setMessages: UseChatHelpers<ChatMessage>["setMessages"];
 }) {
-  const handleClick = useCallback(
-    (event: React.MouseEvent<HTMLButtonElement>) => {
-      event.preventDefault();
-      stop();
-      setMessages((messages) => messages);
-    },
-    [setMessages, stop]
-  );
-
   return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <Button
-            aria-label="Stop generating"
-            data-testid="stop-button"
-            onClick={handleClick}
-            size="icon"
-          />
-        }
-      >
-        <Square fill="currentColor" />
-      </TooltipTrigger>
-      <TooltipContent side="left">Stop generating</TooltipContent>
-    </Tooltip>
+    <Button
+      aria-label="Stop generating"
+      data-testid="stop-button"
+      onClick={(event) => {
+        event.preventDefault();
+        stop();
+        setMessages((messages) => messages);
+      }}
+      size="icon"
+    >
+      <Square fill="currentColor" />
+    </Button>
   );
 }
-
-const StopButton = memo(PureStopButton);
