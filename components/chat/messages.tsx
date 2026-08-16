@@ -1,4 +1,5 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
+import { Spinner } from "@/components/ui/spinner";
 import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
 import {
@@ -34,15 +35,24 @@ function PureMessages({
   regenerate,
   isReadonly,
   isArtifactVisible: _isArtifactVisible,
-  isLoading: _isLoading,
+  isLoading = false,
   selectedModelId: _selectedModelId,
 }: MessagesProps) {
   useDataStream();
 
+  const isLoadingHistory = isLoading && messages.length === 0;
+  const isGenerating = status === "submitted" || status === "streaming";
+
   return (
     <Conversation>
       <ConversationContent className="mx-auto w-full max-w-3xl pb-35">
-        {messages.length === 0 ? (
+        {isLoadingHistory ? (
+          <ConversationEmptyState
+            className="min-h-[calc(100dvh-12rem)]"
+            icon={<Spinner className="size-5" />}
+            title="Loading conversation..."
+          />
+        ) : messages.length === 0 ? (
           <ConversationEmptyState
             description=""
             title="What can I help with?"
@@ -69,8 +79,9 @@ function PureMessages({
               />
             ))}
 
-            {status === "submitted" &&
-              messages.at(-1)?.role !== "assistant" && <ThinkingMessage />}
+            {isGenerating && messages.at(-1)?.role !== "assistant" && (
+              <ThinkingMessage />
+            )}
           </>
         )}
       </ConversationContent>
