@@ -9,7 +9,6 @@ import {
   ModelSelectorInput,
   ModelSelectorItem,
   ModelSelectorList,
-  ModelSelectorLogo,
   ModelSelectorName,
 } from "@/components/ai-elements/model-selector";
 import {
@@ -39,7 +38,6 @@ function ModelSelectorOption({
   selectedModelId: string;
   setOpen: (open: boolean) => void;
 }) {
-  const [logoProvider] = model.id.split("/");
   const maybeWithTooltip = (icon: ReactNode, label: string) => (
     <Tooltip>
       <TooltipTrigger render={<span className="inline-flex" />}>
@@ -70,7 +68,6 @@ function ModelSelectorOption({
       onSelect={handleSelect}
       value={model.id}
     >
-      <ModelSelectorLogo provider={logoProvider} />
       <ModelSelectorName>{model.name}</ModelSelectorName>
       <div className="ml-auto flex items-center gap-2 text-muted-foreground">
         {capabilities?.[model.id]?.tools &&
