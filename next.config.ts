@@ -19,7 +19,11 @@ const nextConfig: NextConfig = {
       }
     : {}),
   allowedDevOrigins: ["192.168.3.74"],
-  cacheComponents: true,
+  // Cache Components is intentionally disabled for this chat shell. The
+  // application uses request-bound cookies/session state in the shared layout
+  // so the initial sidebar and model state can be rendered correctly on the
+  // server without introducing Suspense fallbacks or hydration jumps.
+  cacheComponents: false,
   devIndicators: false,
   env: {
     NEXT_PUBLIC_BASE_PATH: basePath,
