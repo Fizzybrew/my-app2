@@ -25,7 +25,8 @@ import {
   useMemo,
   useState,
 } from "react";
-import { Streamdown } from "streamdown";
+import { createPortal } from "react-dom";
+import { Streamdown, type LinkSafetyModalProps } from "streamdown";
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
   from: UIMessage["role"];
@@ -314,6 +315,53 @@ export const MessageBranchPage = ({
   );
 };
 
+const StreamdownLinkSafetyModal = ({
+  url,
+  isOpen,
+  onClose,
+  onConfirm,
+}: LinkSafetyModalProps) => {
+  if (!isOpen || typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(
+    <div
+      aria-label="External link confirmation"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-sm"
+      onClick={onClose}
+      role="dialog"
+    >
+      <div
+        className="w-full max-w-md rounded-2xl border border-border bg-background p-5 text-foreground shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="space-y-1">
+          <h2 className="font-semibold text-base">Open external link?</h2>
+          <p className="text-muted-foreground text-sm">
+            You are about to open this URL:
+          </p>
+        </div>
+
+        <div className="mt-4 max-h-32 overflow-auto rounded-lg bg-muted px-3 py-2 font-mono text-xs break-all">
+          {url}
+        </div>
+
+        <div className="mt-5 flex justify-end gap-2">
+          <Button onClick={onClose} type="button" variant="outline">
+            Cancel
+          </Button>
+          <Button onClick={onConfirm} type="button">
+            Open link
+          </Button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+};
+
 export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 
 const streamdownPlugins = { cjk, code, math, mermaid };
@@ -340,6 +388,12 @@ export const MessageResponse = memo(
   ({ className, ...props }: MessageResponseProps) => (
     <Streamdown
       className={cn(messageTypography, "size-full", className)}
+      linkSafety={{
+        enabled: true,
+        renderModal: (modalProps) => (
+          <StreamdownLinkSafetyModal {...modalProps} />
+        ),
+      }}
       plugins={streamdownPlugins}
       {...props}
     />
@@ -364,5 +418,7 @@ export const MessageToolbar = ({
       className,
     )}
     {...props}
-  />
+  >
+    {children}
+  </div>
 );
