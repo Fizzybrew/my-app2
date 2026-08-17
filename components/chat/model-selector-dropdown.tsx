@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/tooltip";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import type { ChatModel, ModelCapabilities } from "@/lib/ai/providers";
-import { cn } from "@/lib/utils";
 
 function setCookie(name: string, value: string) {
   const maxAge = 60 * 60 * 24 * 365;
@@ -74,15 +73,11 @@ function ModelSelectorOption({
 
   return (
     <ModelSelectorItem
-      className={cn(
-        "flex w-full transition-colors",
-        "data-[selected=true]:bg-muted data-[selected=true]:text-foreground",
-      )}
       onSelect={handleSelect}
       value={model.id}
     >
       <ModelSelectorName>{model.name}</ModelSelectorName>
-      <div className="ml-auto flex items-center gap-2 text-muted-foreground">
+      <div className="flex items-center gap-2 text-muted-foreground">
         {capabilities?.[model.id]?.tools &&
           maybeWithTooltip(<WrenchIcon />, "Supports tool use")}
         {capabilities?.[model.id]?.vision &&
@@ -96,12 +91,9 @@ function ModelSelectorOption({
 
 function ModelSelectorSkeleton() {
   return (
-    <div className="space-y-2 p-2">
+    <div className="space-y-2 p-1.5">
       {Array.from({ length: 6 }, (_, index) => (
-        <div className="flex h-8 items-center gap-3 px-2" key={index}>
-          <Skeleton className="h-4 flex-1 rounded-md" />
-          <Skeleton className="h-4 w-16 rounded-md" />
-        </div>
+        <Skeleton className="h-8 w-full rounded-2xl" key={index} />
       ))}
     </div>
   );
