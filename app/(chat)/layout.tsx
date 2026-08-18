@@ -10,7 +10,11 @@ import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import { getModel, type ModelCapabilities } from "@/lib/ai/providers";
 import { auth } from "../(auth)/auth";
 
-export default async function Layout({ children }: { children: React.ReactNode }) {
+export default async function Layout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [session, cookieStore] = await Promise.all([auth(), cookies()]);
   const isCollapsed = cookieStore.get("sidebar_state")?.value !== "true";
 

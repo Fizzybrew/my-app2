@@ -13,7 +13,7 @@ function PureArtifactCloseButton() {
             ...currentArtifact,
             isVisible: false,
           }
-        : { ...initialArtifactData, status: "idle" }
+        : { ...initialArtifactData, status: "idle" },
     );
   }, [setArtifact]);
 
@@ -31,7 +31,7 @@ function PureArtifactCloseButton() {
       >
         <X />
       </TooltipTrigger>
-      <TooltipContent>Close</TooltipContent>
+      <TooltipContent>Close artifact</TooltipContent>
     </Tooltip>
   );
 }

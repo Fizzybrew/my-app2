@@ -43,13 +43,13 @@ export const ModelSelectorContent = ({
   <DialogContent
     aria-describedby={undefined}
     className={cn(
-      "h-[min(520px,70vh)] max-h-[70vh] overflow-hidden outline! border-none! p-0 outline-border! outline-solid!",
+      "outline! border-none! p-0 outline-border! outline-solid!",
       className,
     )}
     {...props}
   >
     <DialogTitle className="sr-only">{title}</DialogTitle>
-    <Command className="min-h-0 h-full **:data-[slot=command-input-wrapper]:h-auto">
+    <Command className="**:data-[slot=command-input-wrapper]:h-auto">
       {children}
     </Command>
   </DialogContent>
@@ -72,7 +72,10 @@ export const ModelSelectorInput = ({
 
 export type ModelSelectorListProps = ComponentProps<typeof CommandList>;
 
-export const ModelSelectorList = ({ className, ...props }: ModelSelectorListProps) => (
+export const ModelSelectorList = ({
+  className,
+  ...props
+}: ModelSelectorListProps) => (
   <CommandList
     className={cn("min-h-0 flex-1 max-h-none", className)}
     {...props}

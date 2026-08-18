@@ -45,18 +45,11 @@ function PureMessages({
 
   return (
     <Conversation>
-      <ConversationContent className="mx-auto w-full max-w-3xl pb-35">
+      <ConversationContent className="mx-auto w-full max-w-3xl pb-[141.66px]">
         {isLoadingHistory ? (
-          <ConversationEmptyState
-            className="min-h-[calc(100dvh-12rem)]"
-            icon={<Spinner className="size-5" />}
-            title="Loading conversation..."
-          />
+          <ConversationEmptyState icon={<Spinner />} />
         ) : messages.length === 0 ? (
-          <ConversationEmptyState
-            description=""
-            title="What can I help with?"
-          />
+          <ConversationEmptyState title="What can I help with?" />
         ) : (
           <>
             {messages.map((message, index) => (

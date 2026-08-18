@@ -2,16 +2,10 @@ import { Astroid } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { cn } from "@/lib/utils";
 
-export function ChatHeader({ className }: { className?: string }) {
+export function ChatHeader() {
   return (
-    <header
-      className={cn(
-        "absolute top-0 right-0 left-0 z-10 px-4 py-2 flex items-center justify-between pointer-events-none",
-        className
-      )}
-    >
+    <header className="absolute top-0 inset-x-0 z-10 px-4 py-2 flex items-center justify-between pointer-events-none">
       <SidebarTrigger
         className="pointer-events-auto md:hidden"
         variant="outline"
@@ -19,7 +13,7 @@ export function ChatHeader({ className }: { className?: string }) {
 
       <Button
         aria-label="Upgrade"
-        className="pointer-events-auto ml-auto"
+        className="pointer-events-auto ml-auto hidden"
         nativeButton={false}
         render={
           <Link

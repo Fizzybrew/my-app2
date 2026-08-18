@@ -25,8 +25,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { createPortal } from "react-dom";
-import { Streamdown, type LinkSafetyModalProps } from "streamdown";
+import { Streamdown } from "streamdown";
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
   from: UIMessage["role"];
@@ -35,7 +34,7 @@ export type MessageProps = HTMLAttributes<HTMLDivElement> & {
 export const Message = ({ className, from, ...props }: MessageProps) => (
   <div
     className={cn(
-      "group flex w-full max-w-[95%] flex-col gap-2",
+      "group flex w-full flex-col gap-2",
       from === "user" ? "is-user ml-auto justify-end" : "is-assistant",
       className,
     )}
@@ -204,6 +203,7 @@ export const MessageBranchContent = ({
     [children],
   );
 
+  // Use useEffect to update branches when they change
   useEffect(() => {
     if (branches.length !== childrenArray.length) {
       setBranches(childrenArray);
@@ -232,6 +232,7 @@ export const MessageBranchSelector = ({
 }: MessageBranchSelectorProps) => {
   const { totalBranches } = useMessageBranch();
 
+  // Don't render if there's only one branch
   if (totalBranches <= 1) {
     return null;
   }
@@ -315,85 +316,17 @@ export const MessageBranchPage = ({
   );
 };
 
-const StreamdownLinkSafetyModal = ({
-  url,
-  isOpen,
-  onClose,
-  onConfirm,
-}: LinkSafetyModalProps) => {
-  if (!isOpen || typeof document === "undefined") {
-    return null;
-  }
-
-  return createPortal(
-    <div
-      aria-label="External link confirmation"
-      aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-sm"
-      onClick={onClose}
-      role="dialog"
-    >
-      <div
-        className="w-full max-w-md rounded-2xl border border-border bg-background p-5 text-foreground shadow-2xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="space-y-1">
-          <h2 className="font-semibold text-base">Open external link?</h2>
-          <p className="text-muted-foreground text-sm">
-            You are about to open this URL:
-          </p>
-        </div>
-
-        <div className="mt-4 max-h-32 overflow-auto rounded-lg bg-muted px-3 py-2 font-mono text-xs break-all">
-          {url}
-        </div>
-
-        <div className="mt-5 flex justify-end gap-2">
-          <Button onClick={onClose} type="button" variant="outline">
-            Cancel
-          </Button>
-          <Button onClick={onConfirm} type="button">
-            Open link
-          </Button>
-        </div>
-      </div>
-    </div>,
-    document.body,
-  );
-};
-
 export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 
 const streamdownPlugins = { cjk, code, math, mermaid };
 
-const messageTypography = [
-  "text-sm leading-7",
-  "[&_h1]:mb-5 [&_h1]:text-2xl [&_h1]:font-semibold [&_h1]:leading-tight",
-  "[&_h2]:mb-4 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:leading-tight",
-  "[&_h3]:mb-3 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:leading-tight",
-  "[&_h4]:mb-2 [&_h4]:text-base [&_h4]:font-semibold [&_h4]:leading-tight",
-  "[&_p]:mb-3 [&_p]:leading-7",
-  "[&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6",
-  "[&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6",
-  "[&_li]:my-1 [&_li]:pl-1",
-  "[&_blockquote]:my-4 [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-4 [&_blockquote]:text-muted-foreground",
-  "[&_hr]:my-6 [&_hr]:border-border",
-  "[&_a]:font-medium [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-4",
-  "[&_strong]:font-semibold",
-  "[&_em]:italic",
-  "[&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
-].join(" ");
-
 export const MessageResponse = memo(
   ({ className, ...props }: MessageResponseProps) => (
     <Streamdown
-      className={cn(messageTypography, "size-full", className)}
-      linkSafety={{
-        enabled: true,
-        renderModal: (modalProps) => (
-          <StreamdownLinkSafetyModal {...modalProps} />
-        ),
-      }}
+      className={cn(
+        "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+        className,
+      )}
       plugins={streamdownPlugins}
       {...props}
     />

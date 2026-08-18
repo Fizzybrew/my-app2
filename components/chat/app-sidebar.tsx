@@ -100,7 +100,11 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                 <SidebarMenuButton
                   aria-label="Close sidebar"
                   onClick={handleToggleSidebar}
-                  tooltip={{ children: "Close sidebar", hidden: false }}
+                  tooltip={{
+                    children: "Close sidebar",
+                    hidden: false,
+                    side: "bottom",
+                  }}
                 >
                   <PanelLeftIcon />
                 </SidebarMenuButton>

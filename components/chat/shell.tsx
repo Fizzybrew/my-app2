@@ -77,7 +77,7 @@ export function ChatShell() {
             votes={votes}
           />
           {!isReadonly && (
-            <div className="absolute bottom-6 left-0 right-0 z-10 mx-auto max-w-3xl px-4">
+            <div className="absolute bottom-0 left-0 right-0 z-10 mx-auto max-w-3xl px-4 bg-linear-to-b from-transparent to-background/75 pb-6">
               <MultimodalInput
                 attachments={attachments}
                 chatId={chatId}
