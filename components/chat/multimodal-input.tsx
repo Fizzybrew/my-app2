@@ -1,10 +1,6 @@
 "use client";
 
 import type { UseChatHelpers } from "@ai-sdk/react";
-import type { UIMessage } from "ai";
-import { ArrowUpIcon, Paperclip, Square } from "lucide-react";
-import { AnimatePresence } from "motion/react";
-import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
@@ -13,11 +9,9 @@ import {
   memo,
   type SetStateAction,
   useCallback,
-  useEffect,
   useRef,
   useState,
 } from "react";
-import { useLocalStorage, useWindowSize } from "usehooks-ts";
 import {
   ModelSelector,
   ModelSelectorLogo,
@@ -27,16 +21,15 @@ import {
 import { toast } from "@/components/ui/toast";
 import type { ModelCapabilities } from "@/lib/ai/providers";
 import type { Attachment, ChatMessage } from "@/lib/types";
-import { cn } from "@/lib/utils";
 import {
   PromptInput,
+  PromptInputBody,
+  PromptInputButton,
   PromptInputFooter,
   PromptInputSubmit,
   PromptInputTextarea,
   PromptInputTools,
 } from "../ai-elements/prompt-input";
-import { Button } from "../ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { ModelSelectorDropdown } from "./model-selector-dropdown";
 import { PreviewAttachment } from "./preview-attachment";
 import {
@@ -44,11 +37,7 @@ import {
   SlashCommandMenu,
   slashCommands,
 } from "./slash-commands";
-
-const SuggestedActions = dynamic(
-  () => import("./suggested-actions").then((mod) => mod.SuggestedActions),
-  { ssr: true },
-);
+import { Paperclip } from "lucide-react";
 
 type MultimodalInputProps = {
   chatId: string;
@@ -58,10 +47,7 @@ type MultimodalInputProps = {
   stop: () => void;
   attachments: Attachment[];
   setAttachments: Dispatch<SetStateAction<Attachment[]>>;
-  messages: UIMessage[];
   setMessages: UseChatHelpers<ChatMessage>["setMessages"];
-  sendMessage: UseChatHelpers<ChatMessage>["sendMessage"];
-  className?: string;
   selectedModelId: string;
   currentModelName: string;
   currentModelCapabilities: ModelCapabilities;
@@ -70,7 +56,7 @@ type MultimodalInputProps = {
     name: string;
     capabilities: ModelCapabilities;
   }) => void;
-  isLoading?: boolean;
+  onSubmit: () => void;
 };
 
 function PureMultimodalInput({
@@ -81,50 +67,19 @@ function PureMultimodalInput({
   stop,
   attachments,
   setAttachments,
-  messages,
   setMessages,
-  sendMessage,
-  className,
   selectedModelId,
   currentModelName,
   currentModelCapabilities,
   onModelChange,
-  isLoading,
+  onSubmit,
 }: MultimodalInputProps) {
   const router = useRouter();
-  const { setTheme, resolvedTheme } = useTheme();
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const hasAutoFocused = useRef(false);
-  const { width } = useWindowSize();
   const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
   const [uploadQueue, setUploadQueue] = useState<string[]>([]);
   const [slashOpen, setSlashOpen] = useState(false);
   const [slashQuery, setSlashQuery] = useState("");
-  const [slashIndex, setSlashIndex] = useState(0);
-
-  const [localStorageInput, setLocalStorageInput] = useLocalStorage(
-    "input",
-    "",
-  );
-
-  useEffect(() => {
-    if (!hasAutoFocused.current && width) {
-      const timer = setTimeout(() => {
-        textareaRef.current?.focus();
-        hasAutoFocused.current = true;
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [width]);
-
-  useEffect(() => {
-    setInput(localStorageInput || "");
-  }, [localStorageInput, setInput]);
-
-  useEffect(() => {
-    setLocalStorageInput(input);
-  }, [input, setLocalStorageInput]);
 
   const handleInput = useCallback(
     (event: ChangeEvent<HTMLTextAreaElement>) => {
@@ -134,7 +89,6 @@ function PureMultimodalInput({
       if (value.startsWith("/") && !value.includes(" ")) {
         setSlashOpen(true);
         setSlashQuery(value.slice(1));
-        setSlashIndex(0);
       } else {
         setSlashOpen(false);
       }
@@ -154,100 +108,12 @@ function PureMultimodalInput({
         case "clear":
           setMessages([]);
           break;
-        case "rename":
-          toast.add({
-            description: "Rename is available from the sidebar chat menu.",
-            type: "info",
-          });
-          break;
-        case "model":
-          document
-            .querySelector<HTMLButtonElement>("[data-testid='model-selector']")
-            ?.click();
-          break;
-        case "theme":
-          setTheme(resolvedTheme === "dark" ? "light" : "dark");
-          break;
-        case "delete": {
-          const toastId = toast.add({
-            actionProps: {
-              children: "Delete",
-              onClick() {
-                void fetch(
-                  `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/chat?id=${chatId}`,
-                  { method: "DELETE" },
-                );
-                router.push("/");
-                toast.add({ title: "Chat deleted" });
-                toast.close(toastId);
-              },
-            },
-            title: "Delete this chat?",
-          });
-          break;
-        }
-        case "purge": {
-          const toastId = toast.add({
-            actionProps: {
-              children: "Delete all",
-              onClick() {
-                void fetch(
-                  `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/history`,
-                  { method: "DELETE" },
-                );
-                router.push("/");
-                toast.add({ title: "All chats deleted" });
-                toast.close(toastId);
-              },
-            },
-            title: "Delete all chats?",
-          });
-          break;
-        }
         default:
           break;
       }
     },
-    [chatId, resolvedTheme, router, setInput, setMessages, setTheme],
+    [chatId, router, setInput, setMessages],
   );
-
-  const submitForm = useCallback(() => {
-    window.history.pushState(
-      {},
-      "",
-      `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/chat/${chatId}`,
-    );
-
-    sendMessage({
-      parts: [
-        ...attachments.map((attachment) => ({
-          mediaType: attachment.contentType,
-          name: attachment.name,
-          type: "file" as const,
-          url: attachment.url,
-        })),
-        { text: input, type: "text" },
-      ],
-      role: "user",
-    });
-
-    setAttachments([]);
-    setLocalStorageInput("");
-    setInput("");
-
-    if (width && width > 768) {
-      textareaRef.current?.focus();
-    }
-  }, [
-    attachments,
-    chatId,
-    input,
-    sendMessage,
-    setAttachments,
-    setInput,
-    setLocalStorageInput,
-    width,
-  ]);
 
   const uploadFile = useCallback(async (file: File) => {
     const formData = new FormData();
@@ -297,100 +163,40 @@ function PureMultimodalInput({
     [setAttachments, uploadFile],
   );
 
-  const handlePaste = useCallback(
-    async (event: ClipboardEvent) => {
-      const items = event.clipboardData?.items;
-      if (!items) return;
+  const handleTextareaKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (!slashOpen) {
+        return;
+      }
 
-      const imageItems = Array.from(items).filter((item) =>
-        item.type.startsWith("image/"),
-      );
-      if (imageItems.length === 0) return;
-
-      event.preventDefault();
-      setUploadQueue((current) => [...current, "Pasted image"]);
-
-      try {
-        const uploaded = await Promise.all(
-          imageItems
-            .map((item) => item.getAsFile())
-            .filter((file): file is File => file !== null)
-            .map(uploadFile),
-        );
-
-        setAttachments((current) => [
-          ...current,
-          ...uploaded.filter((item): item is Attachment => Boolean(item)),
-        ]);
-      } finally {
-        setUploadQueue([]);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setSlashOpen(false);
       }
     },
-    [setAttachments, uploadFile],
+    [slashOpen],
   );
 
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    textarea.addEventListener("paste", handlePaste);
-    return () => textarea.removeEventListener("paste", handlePaste);
-  }, [handlePaste]);
+  const [provider] = selectedModelId.split("/");
 
   const handlePromptSubmit = useCallback(() => {
     if (input.startsWith("/")) {
       const command = slashCommands.find(
         (item) => item.name === input.slice(1).trim(),
       );
-      if (command) handleSlashSelect(command);
+
+      if (command) {
+        handleSlashSelect(command);
+      }
+
       return;
     }
 
-    if (!input.trim() && attachments.length === 0) return;
-
-    if (status === "ready" || status === "error") {
-      submitForm();
-    } else {
-      toast.add({
-        title: "Please wait for the model to finish its response!",
-        type: "error",
-      });
-    }
-  }, [attachments.length, handleSlashSelect, input, status, submitForm]);
-
-  const handleTextareaKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (!slashOpen) return;
-
-      const filtered = slashCommands.filter((command) =>
-        command.name.startsWith(slashQuery.toLowerCase()),
-      );
-
-      if (event.key === "ArrowDown") {
-        event.preventDefault();
-        setSlashIndex((index) => Math.min(index + 1, filtered.length - 1));
-      } else if (event.key === "ArrowUp") {
-        event.preventDefault();
-        setSlashIndex((index) => Math.max(index - 1, 0));
-      } else if (event.key === "Enter" || event.key === "Tab") {
-        event.preventDefault();
-        if (filtered[slashIndex]) handleSlashSelect(filtered[slashIndex]);
-      } else if (event.key === "Escape") {
-        event.preventDefault();
-        setSlashOpen(false);
-      }
-    },
-    [handleSlashSelect, slashIndex, slashOpen, slashQuery],
-  );
-
-  const [provider] = selectedModelId.split("/");
+    onSubmit();
+  }, [handleSlashSelect, input, onSubmit]);
 
   return (
-    <div
-      className={cn(
-        "relative flex w-full flex-col rounded-3xl bg-background",
-        className,
-      )}
-    >
+    <div className="relative flex w-full flex-col rounded-3xl bg-background">
       <input
         aria-label="Upload files"
         className="pointer-events-none fixed -top-4 -left-4 size-0.5 opacity-0"
@@ -402,15 +208,10 @@ function PureMultimodalInput({
       />
 
       {slashOpen && (
-        <SlashCommandMenu
-          onClose={() => setSlashOpen(false)}
-          onSelect={handleSlashSelect}
-          query={slashQuery}
-          selectedIndex={slashIndex}
-        />
+        <SlashCommandMenu onSelect={handleSlashSelect} query={slashQuery} />
       )}
 
-      <PromptInput onSubmit={handlePromptSubmit} suppressHydrationWarning>
+      <PromptInput onSubmit={handlePromptSubmit}>
         {(attachments.length > 0 || uploadQueue.length > 0) && (
           <div
             className="flex w-full flex-row gap-2 overflow-x-auto px-3 pt-3 no-scrollbar"
@@ -433,25 +234,29 @@ function PureMultimodalInput({
             ))}
           </div>
         )}
-
-        <PromptInputTextarea
-          className="min-h-4 px-4 pt-3.5 pb-1.5 text-base!"
-          data-testid="multimodal-input"
-          onChange={handleInput}
-          onKeyDown={handleTextareaKeyDown}
-          placeholder="Ask anything..."
-          ref={textareaRef}
-          suppressHydrationWarning
-          value={input}
-        />
-
+        <PromptInputBody>
+          <PromptInputTextarea
+            className="min-h-4 px-4 pt-3.5 pb-1.5 text-base!"
+            data-testid="multimodal-input"
+            onChange={handleInput}
+            onKeyDown={handleTextareaKeyDown}
+            value={input}
+          />
+        </PromptInputBody>
         <PromptInputFooter>
           <PromptInputTools>
-            <AttachmentsButton
-              capabilities={currentModelCapabilities}
-              fileInputRef={fileInputRef}
-              status={status}
-            />
+            <PromptInputButton
+              aria-label="Attach files and more"
+              data-testid="attachments-button"
+              disabled={status !== "ready" || !currentModelCapabilities.vision}
+              onClick={(event) => {
+                event.preventDefault();
+                fileInputRef.current?.click();
+              }}
+              tooltip="Attach files and more"
+            >
+              <Paperclip className="-rotate-42" />
+            </PromptInputButton>
 
             <ModelSelector
               onOpenChange={setModelSelectorOpen}
@@ -459,9 +264,8 @@ function PureMultimodalInput({
             >
               <ModelSelectorTrigger
                 render={
-                  <Button
+                  <PromptInputButton
                     aria-label="Select a model"
-                    className="group"
                     data-testid="model-selector"
                     variant="ghost"
                   />
@@ -481,44 +285,20 @@ function PureMultimodalInput({
             </ModelSelector>
           </PromptInputTools>
 
-          {status === "submitted" || status === "streaming" ? (
-            <Tooltip>
-              <TooltipTrigger
-                render={<StopButton setMessages={setMessages} stop={stop} />}
-              />
-              <TooltipContent side="top">Stop replying</TooltipContent>
-            </Tooltip>
-          ) : (
-            <PromptInputSubmit
-              aria-label="Send a message"
-              className="size-9"
-              data-testid="send-button"
-              disabled={!input.trim() || uploadQueue.length > 0}
-              status={status}
-            >
-              <ArrowUpIcon className="size-4" />
-            </PromptInputSubmit>
-          )}
+          <PromptInputSubmit
+            aria-label="Send a message"
+            className="size-9"
+            data-testid="send-button"
+            disabled={
+              status !== "submitted" &&
+              status !== "streaming" &&
+              (!input.trim() || uploadQueue.length > 0)
+            }
+            onStop={stop}
+            status={status}
+          />
         </PromptInputFooter>
       </PromptInput>
-
-      <AnimatePresence>
-        {!isLoading &&
-          messages.length === 0 &&
-          attachments.length === 0 &&
-          uploadQueue.length === 0 &&
-          !input.trim() && (
-            <div className="absolute inset-x-0 top-full">
-              <SuggestedActions
-                chatId={chatId}
-                onSuggestionClick={(text) => {
-                  setInput(text);
-                  textareaRef.current?.focus();
-                }}
-              />
-            </div>
-          )}
-      </AnimatePresence>
     </div>
   );
 }
@@ -542,66 +322,4 @@ function AttachmentPreviewItem({
   }, [attachment.url, fileInputRef, setAttachments]);
 
   return <PreviewAttachment attachment={attachment} onRemove={handleRemove} />;
-}
-
-function AttachmentsButton({
-  capabilities,
-  fileInputRef,
-  status,
-}: {
-  capabilities: ModelCapabilities;
-  fileInputRef: React.MutableRefObject<HTMLInputElement | null>;
-  status: UseChatHelpers<ChatMessage>["status"];
-}) {
-  const disabled = status !== "ready" || !capabilities.vision;
-
-  const button = (
-    <Button
-      aria-label="Attach files and more"
-      data-testid="attachments-button"
-      disabled={disabled}
-      onClick={(event) => {
-        event.preventDefault();
-        fileInputRef.current?.click();
-      }}
-      size="icon"
-      variant="ghost"
-    >
-      <Paperclip className="-rotate-42" />
-    </Button>
-  );
-
-  if (disabled) return button;
-
-  return (
-    <Tooltip>
-      <TooltipTrigger render={<span className="inline-block" />}>
-        {button}
-      </TooltipTrigger>
-      <TooltipContent side="top">Attach files and more</TooltipContent>
-    </Tooltip>
-  );
-}
-
-function StopButton({
-  stop,
-  setMessages,
-}: {
-  stop: () => void;
-  setMessages: UseChatHelpers<ChatMessage>["setMessages"];
-}) {
-  return (
-    <Button
-      aria-label="Stop generating"
-      data-testid="stop-button"
-      onClick={(event) => {
-        event.preventDefault();
-        stop();
-        setMessages((messages) => messages);
-      }}
-      size="icon"
-    >
-      <Square fill="currentColor" />
-    </Button>
-  );
 }
