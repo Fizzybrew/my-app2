@@ -1,4 +1,4 @@
-import { createOpenAI } from "@ai-sdk/openai";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { customProvider, type LanguageModel } from "ai";
 import { unstable_cache } from "next/cache";
 import { isTestEnvironment } from "../constants";
@@ -24,9 +24,10 @@ const FALLBACK_MODEL: ChatModel = {
   },
 };
 
-const routerai = createOpenAI({
+const routerai = createOpenAICompatible({
   apiKey: process.env.ROUTERAI_API_KEY,
   baseURL: ROUTERAI_API_BASE_URL,
+  name: "routerai",
 });
 
 export type ModelCapabilities = {
@@ -127,8 +128,7 @@ function parseModelsResponse(response: unknown): ChatModel[] {
         ? parseModel(model as RouterAIModel)
         : null,
     )
-    .filter((model): model is ChatModel => model !== null)
-    .filter((model) => model.capabilities.tools);
+    .filter((model): model is ChatModel => model !== null);
 }
 
 async function fetchModelCatalog(): Promise<ChatModel[]> {
@@ -214,7 +214,7 @@ export function getLanguageModel(modelId: string): LanguageModel {
     return chatModel;
   }
 
-  return routerai.languageModel(modelId);
+  return routerai.chatModel(modelId);
 }
 
 export function getTitleModel(): LanguageModel {
@@ -223,7 +223,7 @@ export function getTitleModel(): LanguageModel {
     return mockTitleModel;
   }
 
-  return routerai.languageModel(TITLE_MODEL_ID);
+  return routerai.chatModel(TITLE_MODEL_ID);
 }
 
 export const myProvider = isTestEnvironment
