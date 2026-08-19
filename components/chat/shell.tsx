@@ -14,6 +14,7 @@ import { ChatHeader } from "./chat-header";
 import { DataStreamHandler } from "./data-stream-handler";
 import { Messages } from "./messages";
 import { MultimodalInput } from "./multimodal-input";
+import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
 
 export function ChatShell() {
   const {
@@ -36,22 +37,34 @@ export function ChatShell() {
     setCurrentModel,
   } = useActiveChat();
 
+  // Пока Artifact ещё использует старую систему attachments.
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+
   const isArtifactVisible = useArtifactSelector((state) => state.isVisible);
+
   const { setArtifact } = useArtifact();
 
   const stopRef = useRef(stop);
   stopRef.current = stop;
 
   const prevChatIdRef = useRef(chatId);
+
   useEffect(() => {
     if (prevChatIdRef.current !== chatId) {
       prevChatIdRef.current = chatId;
+
       stopRef.current();
       setArtifact(initialArtifactData);
       setAttachments([]);
     }
   }, [chatId, setArtifact]);
+
+  const handlePromptSubmit = async (message: PromptInputMessage) => {
+    await sendMessage({
+      text: message.text,
+      files: message.files,
+    });
+  };
 
   return (
     <>
@@ -63,6 +76,7 @@ export function ChatShell() {
           )}
         >
           <ChatHeader />
+
           <Messages
             addToolApprovalResponse={addToolApprovalResponse}
             chatId={chatId}
@@ -76,21 +90,15 @@ export function ChatShell() {
             status={status}
             votes={votes}
           />
+
           {!isReadonly && (
-            <div className="absolute bottom-0 left-0 right-0 z-10 mx-auto max-w-3xl px-4 bg-linear-to-b from-transparent to-background/75 pb-6">
+            <div className="absolute bottom-0 left-0 right-0 z-10 mx-auto max-w-3xl bg-linear-to-b from-transparent to-background/75 px-4 pb-6">
               <MultimodalInput
-                attachments={attachments}
-                chatId={chatId}
                 currentModelCapabilities={currentModelCapabilities}
                 currentModelName={currentModelName}
-                input={input}
-                isLoading={isLoading}
-                messages={messages}
                 onModelChange={setCurrentModel}
+                onSubmit={handlePromptSubmit}
                 selectedModelId={currentModelId}
-                sendMessage={sendMessage}
-                setAttachments={setAttachments}
-                setInput={setInput}
                 setMessages={setMessages}
                 status={status}
                 stop={stop}
@@ -117,6 +125,7 @@ export function ChatShell() {
           votes={votes}
         />
       </div>
+
       <DataStreamHandler />
     </>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { BrainIcon, EyeIcon, WrenchIcon } from "lucide-react";
-import { type ReactNode, useCallback } from "react";
+import { type ReactNode, useCallback, useState } from "react";
 import useSWR from "swr";
 import {
   ModelSelectorContent,
@@ -10,6 +10,9 @@ import {
   ModelSelectorItem,
   ModelSelectorList,
   ModelSelectorName,
+  ModelSelector,
+  ModelSelectorLogo,
+  ModelSelectorTrigger,
 } from "@/components/ai-elements/model-selector";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -19,6 +22,7 @@ import {
 } from "@/components/ui/tooltip";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import type { ChatModel, ModelCapabilities } from "@/lib/ai/providers";
+import { PromptInputButton } from "../ai-elements/prompt-input";
 
 function setCookie(name: string, value: string) {
   const maxAge = 60 * 60 * 24 * 365;
@@ -72,10 +76,7 @@ function ModelSelectorOption({
   }, [capabilities, model.id, model.name, onModelChange, setOpen]);
 
   return (
-    <ModelSelectorItem
-      onSelect={handleSelect}
-      value={model.id}
-    >
+    <ModelSelectorItem onSelect={handleSelect} value={model.id}>
       <ModelSelectorName>{model.name}</ModelSelectorName>
       <div className="flex items-center gap-2 text-muted-foreground">
         {capabilities?.[model.id]?.tools &&
@@ -101,16 +102,16 @@ function ModelSelectorSkeleton() {
 
 export function ModelSelectorDropdown({
   selectedModelId,
+  currentModelName,
   onModelChange,
-  setOpen,
 }: {
   selectedModelId: string;
+  currentModelName: string;
   onModelChange?: (model: {
     id: string;
     name: string;
     capabilities: ModelCapabilities;
   }) => void;
-  setOpen: (open: boolean) => void;
 }) {
   const { data: modelsData, error } = useSWR<{
     models: ChatModel[];
@@ -120,6 +121,10 @@ export function ModelSelectorDropdown({
     (url: string) => fetch(url).then((response) => response.json()),
     { dedupingInterval: 3_600_000, revalidateOnFocus: false },
   );
+
+  const [open, setOpen] = useState(false);
+
+  const [provider] = selectedModelId.split("/");
 
   const models = modelsData?.models ?? [];
   const capabilities = modelsData?.capabilities;
@@ -160,36 +165,50 @@ export function ModelSelectorDropdown({
   };
 
   return (
-    <ModelSelectorContent title={selectedModel?.id ?? selectedModelId}>
-      <ModelSelectorInput placeholder="Search models..." />
-      <ModelSelectorList>
-        {!modelsData && !error ? (
-          <ModelSelectorSkeleton />
-        ) : error ? (
-          <div className="px-3 py-6 text-center text-sm text-muted-foreground">
-            Unable to load models. Try again.
-          </div>
-        ) : (
-          Object.keys(grouped)
-            .sort((a, b) => a.localeCompare(b))
-            .map((provider) => (
-              <ModelSelectorGroup
-                heading={providerNames[provider] ?? provider}
-                key={provider}
-              >
-                {grouped[provider].map((model) => (
-                  <ModelSelectorOption
-                    capabilities={capabilities}
-                    key={model.id}
-                    model={model}
-                    onModelChange={onModelChange}
-                    setOpen={setOpen}
-                  />
-                ))}
-              </ModelSelectorGroup>
-            ))
-        )}
-      </ModelSelectorList>
-    </ModelSelectorContent>
+    <ModelSelector open={open} onOpenChange={setOpen}>
+      <ModelSelectorTrigger
+        render={
+          <PromptInputButton
+            aria-label="Select a model"
+            data-testid="model-selector"
+            tooltip="Select model"
+          />
+        }
+      >
+        <ModelSelectorLogo provider={provider} />
+        <ModelSelectorName>{currentModelName}</ModelSelectorName>
+      </ModelSelectorTrigger>
+      <ModelSelectorContent title={selectedModel?.id ?? selectedModelId}>
+        <ModelSelectorInput placeholder="Search models..." />
+        <ModelSelectorList>
+          {!modelsData && !error ? (
+            <ModelSelectorSkeleton />
+          ) : error ? (
+            <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+              Unable to load models. Try again.
+            </div>
+          ) : (
+            Object.keys(grouped)
+              .sort((a, b) => a.localeCompare(b))
+              .map((provider) => (
+                <ModelSelectorGroup
+                  heading={providerNames[provider] ?? provider}
+                  key={provider}
+                >
+                  {grouped[provider].map((model) => (
+                    <ModelSelectorOption
+                      capabilities={capabilities}
+                      key={model.id}
+                      model={model}
+                      onModelChange={onModelChange}
+                      setOpen={setOpen}
+                    />
+                  ))}
+                </ModelSelectorGroup>
+              ))
+          )}
+        </ModelSelectorList>
+      </ModelSelectorContent>
+    </ModelSelector>
   );
 }
