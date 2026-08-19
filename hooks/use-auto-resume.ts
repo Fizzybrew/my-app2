@@ -30,21 +30,29 @@ export function useAutoResume({
     if (mostRecentMessage?.role === "user") {
       resumeStream();
     }
-  }, [autoResume, initialMessages.at, resumeStream]);
+  }, [autoResume, initialMessages, resumeStream]);
 
   useEffect(() => {
-    if (!dataStream) {
-      return;
-    }
-    if (dataStream.length === 0) {
+    const appendMessagePart = dataStream?.find(
+      (part) => part.type === "data-appendMessage",
+    );
+
+    if (!appendMessagePart) {
       return;
     }
 
-    const [dataPart] = dataStream;
+    try {
+      const message = JSON.parse(appendMessagePart.data) as ChatMessage;
 
-    if (dataPart.type === "data-appendMessage") {
-      const message = JSON.parse(dataPart.data);
-      setMessages([...initialMessages, message]);
+      setMessages((currentMessages) => {
+        if (currentMessages.some((current) => current.id === message.id)) {
+          return currentMessages;
+        }
+
+        return [...currentMessages, message];
+      });
+    } catch {
+      // Ignore malformed transient data parts.
     }
-  }, [dataStream, initialMessages, setMessages]);
+  }, [dataStream, setMessages]);
 }
