@@ -28,11 +28,7 @@ import {
 import type { ModelCapabilities } from "@/lib/ai/providers";
 import type { ChatMessage } from "@/lib/types";
 import { ModelSelectorDropdown } from "./model-selector-dropdown";
-import {
-  type SlashCommand,
-  SlashCommandMenu,
-  slashCommands,
-} from "./slash-commands";
+import { type SlashCommand, SlashCommandMenu, slashCommands } from "./slash-commands";
 
 type MultimodalInputProps = {
   status: UseChatHelpers<ChatMessage>["status"];
@@ -52,18 +48,12 @@ type MultimodalInputProps = {
 function PromptInputAttachments() {
   const attachments = usePromptInputAttachments();
 
-  if (attachments.files.length === 0) {
-    return null;
-  }
+  if (attachments.files.length === 0) return null;
 
   return (
     <Attachments variant="inline">
       {attachments.files.map((file) => (
-        <Attachment
-          data={file}
-          key={file.id}
-          onRemove={() => attachments.remove(file.id)}
-        >
+        <Attachment data={file} key={file.id} onRemove={() => attachments.remove(file.id)}>
           <AttachmentPreview />
           <AttachmentRemove />
         </Attachment>
@@ -83,16 +73,13 @@ function PureMultimodalInput({
   onSubmit,
 }: MultimodalInputProps) {
   const router = useRouter();
-
   const [input, setInput] = useState("");
   const [slashOpen, setSlashOpen] = useState(false);
   const [slashQuery, setSlashQuery] = useState("");
 
   const handleInput = useCallback((event: ChangeEvent<HTMLTextAreaElement>) => {
     const value = event.currentTarget.value;
-
     setInput(value);
-
     if (value.startsWith("/") && !value.includes(" ")) {
       setSlashOpen(true);
       setSlashQuery(value.slice(1));
@@ -101,73 +88,32 @@ function PureMultimodalInput({
     }
   }, []);
 
-  const handleSlashSelect = useCallback(
-    (command: SlashCommand) => {
-      setSlashOpen(false);
-      setInput("");
+  const handleSlashSelect = useCallback((command: SlashCommand) => {
+    setSlashOpen(false);
+    setInput("");
+    if (command.action === "new") router.push("/");
+    if (command.action === "clear") setMessages([]);
+  }, [router, setMessages]);
 
-      switch (command.action) {
-        case "new":
-          router.push("/");
-          break;
+  const handlePromptSubmit = useCallback(async (message: PromptInputMessage) => {
+    const text = message.text.trim();
+    const hasAttachments = message.files.length > 0;
 
-        case "clear":
-          setMessages([]);
-          break;
+    if (text.startsWith("/")) {
+      const command = slashCommands.find((item) => item.name === text.slice(1).trim());
+      if (command) handleSlashSelect(command);
+      return;
+    }
 
-        default:
-          break;
-      }
-    },
-    [router, setMessages],
-  );
+    if (!text && !hasAttachments) return;
 
-  const handleTextareaKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (!slashOpen) {
-        return;
-      }
-
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setSlashOpen(false);
-      }
-    },
-    [slashOpen],
-  );
-
-  const handlePromptSubmit = useCallback(
-    async (message: PromptInputMessage) => {
-      const text = message.text.trim();
-      const hasAttachments = message.files.length > 0;
-
-      if (text.startsWith("/")) {
-        const command = slashCommands.find(
-          (item) => item.name === text.slice(1).trim(),
-        );
-
-        if (command) {
-          handleSlashSelect(command);
-        }
-
-        return;
-      }
-
-      if (!text && !hasAttachments) {
-        return;
-      }
-
-      await onSubmit(message);
-      setInput("");
-    },
-    [handleSlashSelect, onSubmit],
-  );
+    await onSubmit(message);
+    setInput("");
+  }, [handleSlashSelect, onSubmit]);
 
   return (
     <div className="relative flex w-full flex-col rounded-3xl bg-background">
-      {slashOpen && (
-        <SlashCommandMenu onSelect={handleSlashSelect} query={slashQuery} />
-      )}
+      {slashOpen && <SlashCommandMenu onSelect={handleSlashSelect} query={slashQuery} />}
 
       <PromptInput globalDrop multiple onSubmit={handlePromptSubmit}>
         <PromptInputHeader>
@@ -179,7 +125,6 @@ function PureMultimodalInput({
             className="min-h-4 px-4 pt-3.5 pb-1.5 text-base!"
             data-testid="multimodal-input"
             onChange={handleInput}
-            onKeyDown={handleTextareaKeyDown}
             placeholder="Ask anything..."
             value={input}
           />
@@ -190,25 +135,20 @@ function PureMultimodalInput({
             <PromptInputActionMenu>
               <PromptInputActionMenuTrigger
                 className="size-9"
-                disabled={
-                  status !== "ready" || !currentModelCapabilities.vision
-                }
+                disabled={status !== "ready" || !currentModelCapabilities.vision}
                 tooltip="Add files and more"
               />
-
               <PromptInputActionMenuContent>
                 <PromptInputActionAddAttachments />
                 <PromptInputActionAddScreenshot />
               </PromptInputActionMenuContent>
             </PromptInputActionMenu>
-
             <ModelSelectorDropdown
               currentModelName={currentModelName}
               onModelChange={onModelChange}
               selectedModelId={selectedModelId}
             />
           </PromptInputTools>
-
           <PromptInputSubmit
             aria-label="Send a message"
             className="size-9"
